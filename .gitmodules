@@ -1,0 +1,3 @@
+[submodule "Lexico"]
+	path = Lexico
+	url = https://github.com/hamish-milne/Lexico
