@@ -1,10 +1,51 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Lexico;
 
 namespace Spool
 {
+
+    namespace Layout
+    {
+        public interface Span
+        {
+        }
+
+        public class TextSpan : Span
+        {
+            public string Text { get; }
+            public TextSpan(string text) => Text = text;
+        }
+
+        public class NamedSpan : Span
+        {
+            public string Name { get; }
+            public Span Inner { get; }
+        }
+
+        public class Sequence : Span
+        {
+            public IEnumerable<Span> Children { get; }
+        }
+        
+        public class Hidden : Span
+        {
+            public Renderable Renderer { get; }
+        }
+    }
+
+    public static class Util
+    {
+        public static Layout.Span Replace(this Layout.Span span, string name, Layout.Span)
+    }
+
+    public interface Renderable
+    {
+        Layout.Span Render(Context context);
+    }
+
     public class Harlowe
     {
         public interface Expression
@@ -17,11 +58,6 @@ namespace Spool
             void Set(Context context, object value);
         }
 
-        public interface TopLevel : Expression
-        {
-
-        }
-
         public delegate void SetFunction();
         public delegate void PutFunction();
 
@@ -32,19 +68,29 @@ namespace Spool
             [IndirectLiteral(nameof(Op))] Unnamed _;
             [Term] public Expression RHS { get; set; }
             protected abstract string Op { get; }
+
+            public abstract object Evaluate(Context context);
         }
 
         public class IsIn : Operator
         {
             protected override string Op => "is in";
+            public override object Evaluate(Context context) => (RHS.Evaluate(context) as ICollection<object>).Contains(LHS.Evaluate(context));
+        }
+        public class Contains : Operator
+        {
+            protected override string Op => "contains";
+            public override object Evaluate(Context context) => (LHS.Evaluate(context) as ICollection<object>).Contains(RHS.Evaluate(context));
         }
         public class Is : Operator
         {
             protected override string Op => "is";
+            public override object Evaluate(Context context) => LHS.Evaluate(context).Equals(RHS.Evaluate(context));
         }
         public class IsNot : Operator
         {
             protected override string Op => "is not";
+            public override object Evaluate(Context context) => !LHS.Evaluate(context).Equals(RHS.Evaluate(context));
         }
         public class Add : Operator
         {
@@ -90,10 +136,6 @@ namespace Spool
         {
             protected override string Op => "of";
         }
-        public class Contains : Operator
-        {
-            protected override string Op => "contains";
-        }
 
         [WhitespaceSeparated]
         public class VariableToValue : Expression
@@ -129,15 +171,17 @@ namespace Spool
             }
         }
 
-        public class Variable : TopLevel, Mutable
+        public class Variable : Renderable, Mutable
         {
-            [CharSet("$_")] private char variableType;
-            public bool Global => variableType == '$'; 
+            [CharSet("$_")] private char variableType { set => Global = value == '$'; }
+            public bool Global { get; set; }
             [CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
 
             public object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
             public void Set(Context context, object value) => (Global ? context.Globals : context.Locals)[Name] = value;
+
+            public Layout.Span Render(Context context) => new Layout.TextSpan(Evaluate(context).ToString());
         }
 
         [WhitespaceSeparated]
@@ -186,7 +230,7 @@ namespace Spool
         }
 
         [SurroundBy("(", ")"), WhitespaceSeparated]
-        public class Macro : TopLevel
+        public class Macro : Renderable, Expression
         {
             [Suffix(":"), CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
@@ -203,22 +247,29 @@ namespace Spool
         }
 
         [SurroundBy("[[", "]]")]
-        public class Link : TopLevel
+        public class Link : Renderable
         {
             [Regex(@"(?!->)(?!<-).+")] public string First { get; set; }
-            [Optional, Regex(@"(<-)|(->)")] public string? Direction { get; set; }
-            [Optional, Regex(@".+")] public string? Second { get; set; }
+            [Optional, Regex(@"(<-)|(->)")] public string Direction { get; set; }
+            [Optional, Regex(@".+")] public string Second { get; set; }
         }
 
         [SurroundBy("[", "]")]
-        public class Hook : TopLevel
+        public class Hook : Renderable
         {
-            [Term] public List<Expression> Content { get; } = new List<Expression>();
+            [Term] public List<Renderable> Content { get; } = new List<Renderable>();
+
+            public Layout.Span Render(Context context)
+            {
+                return Layout.Sequence(Content.Select(x => x.Render(context)).ToArray());
+            }
         }
 
-        public class OpenHook : TopLevel
+        public class OpenHook : Renderable
         {
             [Literal("[==")] Unnamed _;
+
+            public Layout.Span Render(Context context) => new Layout.TextSpan("");
         }
 
         [SurroundBy("\"")]
@@ -227,9 +278,20 @@ namespace Spool
             [Regex(@"[^""]*")] public string Text { get; set; }
         }
 
-        public class PlainText : TopLevel
+        public class PlainText : Renderable
         {
             [Regex(@".[^\(\[\$\_]*")] public string Text { get; set; }
+
+            public Layout.Span Render(Context context) => new Layout.TextSpan(Text);
+        }
+
+
+        public class ChangerChain : Renderable
+        {
+            public Changer Changer { get; }
+            public Renderable Source { get; }
+
+            public Layout.Span Render(Context context) => Changer.Apply(context, Source);
         }
 
 
@@ -240,9 +302,24 @@ namespace Spool
 
         public interface Changer
         {
-            string Apply(Context context, List<Expression> source);
+            Layout.Span Apply(Context context, Renderable source);
         }
 
+        public class Hidden : Changer
+        {
+            public Layout.Span Apply(Context context, Renderable source)
+            {
+                return new Layout.Hidden(source);
+            }
+        }
+
+        public class Show : Command
+        {
+            public void Run(Context context)
+            {
+
+            }
+        }
 
         public class BuiltInMacros
         {
@@ -260,6 +337,8 @@ namespace Spool
             public IDictionary DM(params object[] pairs) => DataMap(pairs);
             public Array Array(params object[] values) => values;
             public Array A(params object[] values) => Array(values);
+            public Changer Hidden() => new Hidden();
+            public Command Show() => new Show();
         }
     }
 

@@ -15,5 +15,7 @@ namespace Spool
     {
         public IDictionary<string, object> Locals { get; }
         public IDictionary<string, object> Globals { get; }
+        public IDictionary<string, object> Hooks { get; }
+        public Layout.Span Screen { get; set; }
     }
 }
