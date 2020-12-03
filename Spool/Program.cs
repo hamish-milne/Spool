@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using System.Xml.Linq;
 
 namespace Spool
 {
@@ -15,7 +16,10 @@ namespace Spool
     {
         public IDictionary<string, object> Locals { get; }
         public IDictionary<string, object> Globals { get; }
-        public IDictionary<string, object> Hooks { get; }
-        public Layout.Span Screen { get; set; }
+        public IDictionary<XNode, Renderable> Hidden { get; }
+        public IDictionary<string, Renderable> Passages { get; }
+        public HashSet<Renderable> Shown { get; }
+        public XDocument Screen { get; }
+        public XContainer Cursor { get; }
     }
 }

@@ -2,48 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 using Lexico;
 
 namespace Spool
 {
 
-    namespace Layout
+    public interface Renderable
     {
-        public interface Span
-        {
-        }
-
-        public class TextSpan : Span
-        {
-            public string Text { get; }
-            public TextSpan(string text) => Text = text;
-        }
-
-        public class NamedSpan : Span
-        {
-            public string Name { get; }
-            public Span Inner { get; }
-        }
-
-        public class Sequence : Span
-        {
-            public IEnumerable<Span> Children { get; }
-        }
-        
-        public class Hidden : Span
-        {
-            public Renderable Renderer { get; }
-        }
+        XNode Render(Context context);
     }
 
     public static class Util
     {
-        public static Layout.Span Replace(this Layout.Span span, string name, Layout.Span)
-    }
-
-    public interface Renderable
-    {
-        Layout.Span Render(Context context);
     }
 
     public class Harlowe
@@ -52,6 +23,8 @@ namespace Spool
         {
             object Evaluate(Context context);
         }
+
+        public interface PrefixExpression : Expression {}
 
         public interface Mutable : Expression
         {
@@ -171,17 +144,34 @@ namespace Spool
             }
         }
 
-        public class Variable : Renderable, Mutable
+        public abstract class ObjectExpression : Renderable, PrefixExpression
+        {
+            public abstract object Evaluate(Context context);
+
+            public XNode Render(Context context)
+            {
+                var value = Evaluate(context);
+                if (value is Changer) {
+                    throw new Exception("Changers must be applied to hooks");
+                }
+                if (value is Command cmd) {
+                    cmd.Run(context);
+                    return new XText("");
+                } else {
+                    return new XText(value.ToString());
+                }
+            }
+        }
+
+        public class Variable : ObjectExpression, Mutable
         {
             [CharSet("$_")] private char variableType { set => Global = value == '$'; }
             public bool Global { get; set; }
             [CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
 
-            public object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
+            public override object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
             public void Set(Context context, object value) => (Global ? context.Globals : context.Locals)[Name] = value;
-
-            public Layout.Span Render(Context context) => new Layout.TextSpan(Evaluate(context).ToString());
         }
 
         [WhitespaceSeparated]
@@ -230,7 +220,7 @@ namespace Spool
         }
 
         [SurroundBy("(", ")"), WhitespaceSeparated]
-        public class Macro : Renderable, Expression
+        public class Macro : ObjectExpression
         {
             [Suffix(":"), CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
@@ -240,60 +230,198 @@ namespace Spool
                 [Literal(",")] Unnamed _;
             }
 
-            public object Evaluate(Context context)
+            public override object Evaluate(Context context)
             {
                 
             }
         }
 
-        [SurroundBy("[[", "]]")]
-        public class Link : Renderable
+        [WhitespaceSeparated]
+        public class AppliedHook : Renderable
         {
-            [Regex(@"(?!->)(?!<-).+")] public string First { get; set; }
-            [Optional, Regex(@"(<-)|(->)")] public string Direction { get; set; }
-            [Optional, Regex(@".+")] public string Second { get; set; }
-        }
 
-        [SurroundBy("[", "]")]
-        public class Hook : Renderable
-        {
-            [Term] public List<Renderable> Content { get; } = new List<Renderable>();
-
-            public Layout.Span Render(Context context)
+            [WhitespaceSurrounded]
+            private class HookSeparator
             {
-                return Layout.Sequence(Content.Select(x => x.Render(context)).ToArray());
+                [Literal("+")] Unnamed _;
+            }
+
+            [WhitespaceSeparated]
+            private class HookPrefix : Changer
+            {
+                [Literal("|")] Unnamed _;
+                [CharRange("az", "AZ", "09", "__")] string name;
+                [CharSet(">)")] char hidden;
+
+                public void Apply(ref bool hidden, ref string name)
+                {
+                    if (name != null) {
+                        throw new Exception("Hook already named");
+                    }
+                    name = this.name;
+                    if (this.hidden == ')') {
+                        hidden = true;
+                    }
+                }
+
+                public XElement Render(Context context, XElement source) => source;
+            }
+
+            [WhitespaceSeparated]
+            private class HookSuffix : Changer
+            {
+                [CharSet("<(")] char hidden;
+                [CharRange("az", "AZ", "09", "__")] string name;
+                [Literal("|")] Unnamed _;
+
+                public void Apply(ref bool hidden, ref string name)
+                {
+                    if (name != null) {
+                        throw new Exception("Hook already named");
+                    }
+                    name = this.name;
+                    if (this.hidden == ')') {
+                        hidden = true;
+                    }
+                }
+
+                public XElement Render(Context context, XElement source) => source;
+            }
+
+            [SeparatedBy(typeof(HookSeparator)), Repeat(Min = 0)] List<PrefixExpression> changers;
+            [Optional] HookPrefix prefix; 
+            [Term] Hook hook;
+            [Optional] HookSuffix suffix;
+
+            public XNode Render(Context context) => Render(context, false);
+
+            public XNode Render(Context context, bool forceShow)
+            {
+                var changerObjs = new List<Changer>();
+                if (prefix != null) {
+                    changerObjs.Add(prefix);
+                }
+                if (suffix != null) {
+                    changerObjs.Add(suffix);
+                }
+                changerObjs.AddRange(changers.Select(x => (x.Evaluate(context) as Changer) ?? throw new Exception("Hook prefix must be a Changer")));
+                string name = null;
+                bool hidden = false;
+                foreach (var c in changerObjs) {
+                    c.Apply(ref hidden, ref name);
+                }
+                XElement content;
+                if (hidden == true && !forceShow) {
+                    content = new XElement(XName.Get("hidden"));
+                    context.Hidden.Add(content, this);
+                } else {
+                    content = hook.Render(context);
+                    foreach (var c in changerObjs) {
+
+                    }
+                }
+                if (name != null) {
+                    content.SetAttributeValue(XName.Get("name"), name);
+                }
+                return content;
             }
         }
 
-        public class OpenHook : Renderable
+        public class False : Expression
+        {
+            [Literal("false")] Unnamed _;
+
+            public object Evaluate(Context context) => false;
+        }
+
+        public class True : Expression
+        {
+            [Literal("true")] Unnamed _;
+
+            public object Evaluate(Context context) => true;
+        }
+
+        public abstract class Hook : Renderable
+        {
+            public abstract XElement Render(Context context);
+
+            XNode Renderable.Render(Context context) => Render(context);
+        }
+
+        [SurroundBy("[[", "]]")]
+        public class RightLink : Hook
+        {
+            [Regex(@"(?!<-).)+")] public string Link { get; set; }
+            [Literal("<-")] Unnamed _;
+            [Optional, Regex(@"((?!]]).)+")] public string Text { get; set; }
+
+            public override XElement Render(Context context)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [SurroundBy("[[", "]]")]
+        public class LeftLink : Hook
+        {
+            [Regex(@"(?!->).)+")] public string Text { get; set; }
+            [Literal("->")] Unnamed _;
+            [Optional, Regex(@"((?!]]).)+")] public string Link { get; set; }
+
+            public override XElement Render(Context context)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [SurroundBy("[[", "]]")]
+        public class PlainLink : Hook
+        {
+            [Regex(@"((?!]]).)+")] public string TextLink { get; set; }
+
+            public override XElement Render(Context context)
+            {
+                var el = new XElement(XName.Get("link"), new XText(TextLink));
+                return el;
+            }
+        }
+
+        [SurroundBy("[", "]")]
+        public class ClosedHook : Hook
+        {
+            [Term] public List<Renderable> Content { get; } = new List<Renderable>();
+
+            public override XElement Render(Context context)
+            {
+                return new XElement(XName.Get("div"), (object[])Content.Select(x => x.Render(context)).ToArray());
+            }
+        }
+
+        public class OpenHook : Hook
         {
             [Literal("[==")] Unnamed _;
+            [Term] public List<Renderable> Content { get; } = new List<Renderable>();
 
-            public Layout.Span Render(Context context) => new Layout.TextSpan("");
+            public override XElement Render(Context context)
+            {
+                return new XElement(XName.Get("div"), (object[])Content.Select(x => x.Render(context)).ToArray());
+            }
         }
 
         [SurroundBy("\"")]
         public class QuotedString : Expression
         {
             [Regex(@"[^""]*")] public string Text { get; set; }
+
+            public object Evaluate(Context context) => Text;
         }
 
         public class PlainText : Renderable
         {
             [Regex(@".[^\(\[\$\_]*")] public string Text { get; set; }
 
-            public Layout.Span Render(Context context) => new Layout.TextSpan(Text);
+            public XNode Render(Context context) => new XText(Text);
         }
-
-
-        public class ChangerChain : Renderable
-        {
-            public Changer Changer { get; }
-            public Renderable Source { get; }
-
-            public Layout.Span Render(Context context) => Changer.Apply(context, Source);
-        }
-
 
         public interface Command
         {
@@ -302,23 +430,58 @@ namespace Spool
 
         public interface Changer
         {
-            Layout.Span Apply(Context context, Renderable source);
+            void Apply(ref bool hidden, ref string name);
+            XElement Render(Context context, XElement source);
         }
 
         public class Hidden : Changer
         {
-            public Layout.Span Apply(Context context, Renderable source)
+            public void Apply(ref bool hidden, ref string name) => hidden = true;
+            public XElement Render(Context context, XElement source) => source;
+        }
+
+        public class Named : Changer
+        {
+            public string Name { get; }
+
+            public void Apply(ref bool hidden, ref string name)
             {
-                return new Layout.Hidden(source);
+                if (name == null) {
+                    throw new Exception("Hook is already named");
+                }
+                name = Name;
             }
+            public XElement Render(Context context, XElement source) => source;
         }
 
         public class Show : Command
         {
+            public IEnumerable<XNode> Nodes { get; }
             public void Run(Context context)
             {
-
+                foreach (var node in Nodes) {
+                    if (context.Hidden.TryGetValue(node, out var renderable)) {
+                        // TODO: Avoid casting here
+                        node.AddAfterSelf(((AppliedHook)renderable).Render(context, true));
+                        context.Hidden.Remove(node);
+                        node.Remove();
+                    }
+                }
             }
+        }
+
+        public class Print : Command
+        {
+            public object Value { get; }
+
+            public void Run(Context context) => context.Cursor.Add(new XText(Value.ToString()));
+        }
+
+        public class Display : Command
+        {
+            public string Passage { get; }
+
+            public void Run(Context context) => context.Cursor.Add(context.Passages[Passage].Render(context));
         }
 
         public class BuiltInMacros
@@ -338,7 +501,7 @@ namespace Spool
             public Array Array(params object[] values) => values;
             public Array A(params object[] values) => Array(values);
             public Changer Hidden() => new Hidden();
-            public Command Show() => new Show();
+            public Command Show(IEnumerable<XNode> nodes) => new Show(nodes);
         }
     }
 
