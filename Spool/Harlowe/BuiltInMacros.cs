@@ -24,6 +24,7 @@ namespace Spool.Harlowe
 
     class BuiltInMacros
     {
+        public BuiltInMacros(Context context) => Context = context;
         public Context Context { get; }
 
         public void Set(SetFunction setter) => setter();
@@ -45,6 +46,7 @@ namespace Spool.Harlowe
         public Command show(IEnumerable<XContainer> nodes) => new Show(nodes);
         class Show : Command
         {
+            public Show(IEnumerable<XContainer> nodes) => Nodes = nodes;
             public IEnumerable<XContainer> Nodes { get; }
             public void Run(Context context)
             {
@@ -66,7 +68,7 @@ namespace Spool.Harlowe
             public Print(object value) => Value = value;
             public object Value { get; }
 
-            public void Render(Context context) => new XText(Value.ToString());
+            public void Render(Context context) => context.AddText(Value?.ToString() ?? "NULL");
         }
 
         public Renderable display(string passage) => Context.Passages[passage];
@@ -106,6 +108,11 @@ namespace Spool.Harlowe
         class ReplaceText : Command
         {
             public Renderable Replacement { get; }
+
+            public void Run(Context context)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

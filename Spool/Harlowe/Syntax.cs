@@ -14,15 +14,30 @@ namespace Spool.Harlowe
         Before
     }
 
+    public enum RenderFlags
+    {
+        None = 0,
+        CollapseWhitespace = (1 << 0)
+    }
+
     public class Context
     {
-        public IDictionary<string, object> Locals { get; }
-        public IDictionary<string, object> Globals { get; }
-        public IDictionary<XContainer, Renderable> Hidden { get; }
-        public IDictionary<string, Renderable> Passages { get; }
-        public XDocument Screen { get; }
+        public Context()
+        {
+            Cursor = new XElement(XName.Get("passage"));
+            Screen.Add(Cursor);
+            MacroProvider = new BuiltInMacros(this);
+        }
+
+        public IDictionary<string, object> Locals { get; } = new Dictionary<string, object>();
+        public IDictionary<string, object> Globals { get; } = new Dictionary<string, object>();
+        public IDictionary<XContainer, Renderable> Hidden { get; } = new Dictionary<XContainer, Renderable>();
+        public IDictionary<string, Renderable> Passages { get; } = new Dictionary<string, Renderable>();
+        public XDocument Screen { get; } = new XDocument();
         public XContainer Cursor { get; private set; }
-        public CursorPos Position { get; private set; }
+        public CursorPos Position { get; private set; } = CursorPos.Child;
+        public object MacroProvider { get; }
+
         public (XContainer, CursorPos) Push(XContainer cursor, CursorPos cursorPos)
         {
             var state = (Cursor, Position);
@@ -65,7 +80,7 @@ namespace Spool.Harlowe
         void Render(Context context);
     }
 
-    [TopLevel]
+    [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]
     public class Passage : Renderable
     {
 
@@ -81,6 +96,7 @@ namespace Spool.Harlowe
         struct ContentList
         {
             [Repeat(Min = 0), Alternative(
+                typeof(NewLine),
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
                 typeof(PlainText)
@@ -88,15 +104,34 @@ namespace Spool.Harlowe
             public List<Renderable> Items;
         }
 
-        [SurroundBy("{", "}"), WhitespaceSeparated]
+        [WhitespaceSeparated, SurroundBy("{", "}")]
         class CollapsedSpan : Renderable
         {
-            
+            [Term] ContentList content;
+
+            public void Render(Context context)
+            {
+                // TODO: Collapse whitespace flag
+                foreach (var c in content.Items) {
+                    c.Render(context);
+                }
+            }
+        }
+
+        class NewLine : Renderable
+        {
+            [Optional, Literal("\r")] Unnamed _;
+            [Literal("\n")] Unnamed __;
+
+            public void Render(Context context)
+            {
+                // TODO: Respect collapsed whitespace flag
+                context.AddText("\n");
+            }
         }
 
 
-
-        [WhitespaceSeparated]
+        [Sequence(CheckZeroLength = true)]
         class AppliedHook : Renderable
         {
 
@@ -110,7 +145,7 @@ namespace Spool.Harlowe
             private class HookPrefix : Changer
             {
                 [Literal("|")] Unnamed _;
-                [CharRange("az", "AZ", "09", "__")] string name;
+                [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [CharSet(">)")] char hidden;
 
                 public void Apply(ref bool hidden, ref string name)
@@ -131,7 +166,7 @@ namespace Spool.Harlowe
             private class HookSuffix : Changer
             {
                 [CharSet("<(")] char hidden;
-                [CharRange("az", "AZ", "09", "__")] string name;
+                [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [Literal("|")] Unnamed _;
 
                 public void Apply(ref bool hidden, ref string name)
@@ -148,15 +183,16 @@ namespace Spool.Harlowe
                 public XElement Render(Context context, XElement source) => source;
             }
 
-            [SeparatedBy(typeof(HookSeparator)), Repeat(Min = 0), Alternative(
+            [Alternative(
                 typeof(Expressions.Macro),
                 typeof(Expressions.Variable)
-            )] List<Expression> changers;
+            ), SeparatedBy(typeof(HookSeparator)), Repeat(Min = 0)] List<Expression> changers;
 
             class HookSyntax
             {
+                [Optional] Whitespace _;
                 [Optional] public HookPrefix prefix; 
-                [Term] public Hook body;
+                [Term] public ChangerTarget body;
                 [Optional] public HookSuffix suffix;
             }
 
@@ -195,11 +231,21 @@ namespace Spool.Harlowe
                 if (hidden == true && !forceShow) {
                     content = new XElement(XName.Get("hidden"));
                     context.Hidden.Add(content, new ShowHiddenHook(this));
-                } else {
+                } else if (hook != null) {
                     content = hook.body.Render(context);
                     foreach (var c in changerObjs) {
                         content = c.Render(context, content);
                     }
+                } else if (changerObjs.Count == 0) {
+                    var macroResult = changers.Last().Evaluate(context);
+                    if (macroResult is Renderable r) {
+                        r.Render(context);
+                        return;
+                    } else {
+                        throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
+                    }
+                } else {
+                    throw new NotImplementedException();
                 }
                 // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
                 if (name != null) {
@@ -208,50 +254,57 @@ namespace Spool.Harlowe
             }
         }
 
-        abstract class Hook
+        abstract class ChangerTarget
         {
             public abstract XElement Render(Context context);
         }
 
-        [SurroundBy("[[", "]]")]
-        class RightLink : Hook
+        abstract class LinkBase : ChangerTarget
         {
-            [Regex(@"(?!<-).)+")] public string Link { get; set; }
-            [Literal("<-")] Unnamed _;
-            [Optional, Regex(@"((?!]]).)+")] public string Text { get; set; }
+            public abstract string Link { get; }
+            public abstract string Text { get; }
 
             public override XElement Render(Context context)
             {
-                throw new NotImplementedException();
-            }
-        }
-
-        [SurroundBy("[[", "]]")]
-        class LeftLink : Hook
-        {
-            [Regex(@"(?!->).)+")] public string Text { get; set; }
-            [Literal("->")] Unnamed _;
-            [Optional, Regex(@"((?!]]).)+")] public string Link { get; set; }
-
-            public override XElement Render(Context context)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        [SurroundBy("[[", "]]")]
-        class PlainLink : Hook
-        {
-            [Regex(@"((?!]]).)+")] public string TextLink { get; set; }
-
-            public override XElement Render(Context context)
-            {
-                var el = new XElement(XName.Get("link"), new XText(TextLink));
+                var el = new XElement(XName.Get("link"), new XText(Text));
+                el.SetAttributeValue(XName.Get("href"), Link);
+                context.Cursor.Add(el);
                 return el;
             }
         }
 
-        abstract class HookBase : Hook
+        [SurroundBy("[[", "]]")]
+        class RightLink : LinkBase
+        {
+            [Regex(@"((?!<-)(?!]]).)+")] string link;
+            [Literal("<-")] Unnamed _;
+            [Optional, Regex(@"((?!]]).)+")] string text;
+
+            public override string Link => link;
+            public override string Text => text;
+        }
+
+        [SurroundBy("[[", "]]")]
+        class LeftLink : LinkBase
+        {
+            [Regex(@"((?!->)(?!]]).)+")] string text;
+            [Literal("->")] Unnamed _;
+            [Optional, Regex(@"((?!]]).)+")] string link;
+
+            public override string Link => link;
+            public override string Text => text;
+        }
+
+        [SurroundBy("[[", "]]")]
+        class PlainLink : LinkBase
+        {
+            [Regex(@"((?!]]).)+")] string textLink;
+
+            public override string Link => textLink;
+            public override string Text => textLink;
+        }
+
+        abstract class HookBase : ChangerTarget
         {
             public abstract List<Renderable> GetContent();
 

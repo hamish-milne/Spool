@@ -64,7 +64,7 @@ namespace Spool.Harlowe
         abstract class Operator : Expression
         {
             [Term] public Expression LHS { get; set; }
-            [IndirectLiteral(nameof(Op))] Unnamed _;
+            [IndirectLiteral(nameof(Op))] protected Unnamed _;
             [Term] public Expression RHS { get; set; }
             protected abstract string Op { get; }
 
@@ -112,6 +112,22 @@ namespace Spool.Harlowe
             public bool GreaterOrEqual(double lhs, double rhs) => lhs >= rhs;
         }
 
+        class Less : Operator
+        {
+            protected override string Op => "<";
+        }
+        class Greater : Operator
+        {
+            protected override string Op => ">";
+        }
+        class LessOrEqual : Operator
+        {
+            protected override string Op => "<=";
+        }
+        class GreaterOrEqual : Operator
+        {
+            protected override string Op => ">=";
+        }
         class IsIn : Operator
         {
             protected override string Op => "is in";
@@ -127,6 +143,10 @@ namespace Spool.Harlowe
         class IsNot : Operator
         {
             protected override string Op => "is not";
+        }
+        class Matches : Operator
+        {
+            protected override string Op => "matches";
         }
         class Add : Operator
         {
@@ -148,29 +168,16 @@ namespace Spool.Harlowe
         {
             protected override string Op => "%";
         }
-        class Less : Operator
-        {
-            protected override string Op => "<";
-        }
-        class Greater : Operator
-        {
-            protected override string Op => ">";
-        }
-        class LessOrEqual : Operator
-        {
-            protected override string Op => "<=";
-        }
-        class GreaterOrEqual : Operator
-        {
-            protected override string Op => ">=";
-        }
-        class Matches : Operator
-        {
-            protected override string Op => "matches";
-        }
         class Of : Operator
         {
             protected override string Op => "of";
+        }
+        [WhitespaceSeparated, SurroundBy("(", ")")]
+        class Parenthesized : Expression
+        {
+            [Term] Expression inner;
+
+            public object Evaluate(Context context) => inner.Evaluate(context);
         }
 
         public abstract class ObjectExpression : Renderable, Expression
@@ -247,7 +254,7 @@ namespace Spool.Harlowe
         {
             [CharSet("$_")] private char variableType { set => Global = value == '$'; }
             public bool Global { get; set; }
-            [CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
+            [CharRange("az", "AZ", "09", "__"), Repeat] public string Name { get; set; }
 
             public override object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
@@ -256,7 +263,7 @@ namespace Spool.Harlowe
 
         class Integer : Expression
         {
-            [CharRange("09")] string number;
+            [CharRange("09"), Repeat] string number;
             [Regex("st|nd|rd|th")] Unnamed _;
 
             public object Evaluate(Context context) => (double)int.Parse(number);
@@ -271,8 +278,8 @@ namespace Spool.Harlowe
 
         class HookRef : Expression
         {
-            [Literal("?")]
-            [CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
+            [Literal("?")] Unnamed _;
+            [CharRange("az", "AZ", "09", "__"), Repeat] public string Name { get; set; }
 
             public object Evaluate(Context context)
             {
@@ -297,10 +304,10 @@ namespace Spool.Harlowe
             }
         }
 
-        [SurroundBy("(", ")"), WhitespaceSeparated]
+        [WhitespaceSeparated, SurroundBy("(", ")")]
         public class Macro : ObjectExpression
         {
-            [Suffix(":"), CharRange("az", "AZ", "09", "__")] public string Name { get; set; }
+            [CharRange("az", "AZ", "09", "__"), Repeat, Suffix(":")] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
 
             [WhitespaceSurrounded]
@@ -310,7 +317,18 @@ namespace Spool.Harlowe
 
             public override object Evaluate(Context context)
             {
-                
+                var args = Arguments.Select(x => x.Evaluate(context)).ToArray();
+                foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    try {
+                        return m.Invoke(context.MacroProvider, args);
+                    } catch (TargetInvocationException e) {
+                        throw e.InnerException;
+                    } catch {
+                        continue;
+                    }
+                }
+                throw new Exception($"No macro '{Name}' with the given arguments");
             }
         }
 
