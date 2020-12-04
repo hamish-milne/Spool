@@ -73,6 +73,33 @@ namespace Spool.Test
             new [] {
 @"(print: ""Red"" + ""belly"")",
 @"Redbelly"
+            },
+            new [] {
+@"(print: (a: 2, 3, 4))",
+@"[2, 3, 4]"
+            },
+            new [] {
+@"(print: (a: 2, 3, 4,))",
+@"[2, 3, 4]"
+            },
+            new [] {
+@"(print: (a: ...(a: 2, 3, 4))",
+@"[2, 3, 4]"
+            },
+            new [] {
+@"(set: $plushieName to ""Felix"")(put: ""pencil"" into _heldItem)
+Your beloved plushie, $plushieName, awaits you after a long work day.
+You put your _heldItem down and lift it for a snuggle.",
+@"
+Your beloved plushie, Felix, awaits you after a long work day.
+You put your pencil down and lift it for a snuggle."
+            },
+            new [] {
+@"(set: $robotText to (font: ""Courier New""))(set: _assistantText to (text-colour: ""Red""))
+$robotText[Good golly! Your flesh... it's so soft!]
+_assistantText[Don't touch me, please! I'm ticklish.]",
+@"<font face=""Courier New"">Good golly! Your flesh... it's so soft!</font>
+<colour c=""Red"">Don't touch me, please! I'm ticklish.</colour>"
             }
         };
     
