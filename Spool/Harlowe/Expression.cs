@@ -307,7 +307,7 @@ namespace Spool.Harlowe
         [WhitespaceSeparated, SurroundBy("(", ")")]
         public class Macro : ObjectExpression
         {
-            [CharRange("az", "AZ", "09", "__"), Repeat, Suffix(":")] public string Name { get; set; }
+            [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":")] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
 
             [WhitespaceSurrounded]
@@ -317,8 +317,9 @@ namespace Spool.Harlowe
 
             public override object Evaluate(Context context)
             {
+                var normalizedName = Name.Replace("-", "").Replace("_", "");
                 var args = Arguments.Select(x => x.Evaluate(context)).ToArray();
-                foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(Name, StringComparison.OrdinalIgnoreCase)))
+                foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase)))
                 {
                     try {
                         return m.Invoke(context.MacroProvider, args);
