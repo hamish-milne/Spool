@@ -2,6 +2,7 @@ using System;
 using Xunit;
 using Spool.Harlowe;
 using System.Xml.Linq;
+using Xunit.Abstractions;
 
 namespace Spool.Test
 {
@@ -69,10 +70,10 @@ namespace Spool.Test
 @"(PRINT: 54)",
 @"54"
             },
-//             new [] {
-// @"(print: ""Red"" + ""belly"")",
-// @"Redbelly"
-//             }
+            new [] {
+@"(print: ""Red"" + ""belly"")",
+@"Redbelly"
+            }
         };
     
 // TODO: (if: (num:"5") > 2)
@@ -83,11 +84,15 @@ namespace Spool.Test
         [MemberData(nameof(ExampleMarkup))]
         public void LinkMarkup(string input, string expected)
         {
-            var passage = Lexico.Lexico.Parse<Passage>(input);
+            var passage = Lexico.Lexico.Parse<Passage>(input /*, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}*/);
             var context = new Context();
             passage.Render(context);
             var actual = context.Screen.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<passage>{expected}</passage>", actual);
         }
+
+        
+        private readonly ITestOutputHelper _outputHelper;
+        public Harlowe(ITestOutputHelper outputHelper) => _outputHelper = outputHelper;
     }
 }

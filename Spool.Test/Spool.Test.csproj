@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Spool\Spool.csproj" />
+    <ProjectReference Include="..\Lexico\Lexico.Test\Lexico.Test.csproj" />
   </ItemGroup>
 
 </Project>

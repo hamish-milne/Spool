@@ -28,9 +28,9 @@ namespace Spool.Harlowe
         [WhitespaceSeparated]
         class VariableToValue : Expression
         {
-            [Term] public Expression Variable { get; set; }
+            [Term] public Expression Variable;
             [Literal("to")] Unnamed _;
-            [Term] public Expression Value { get; set; }
+            [Term] public Expression Value;
 
             public object Evaluate(Context context) {
                 var m = Variable.Evaluate(context) as Mutable;
@@ -45,9 +45,9 @@ namespace Spool.Harlowe
         [WhitespaceSeparated]
         class ValueIntoVariable : Expression
         {
-            [Term] public Expression Value { get; set; }
+            [Term] public Expression Value;
             [Literal("into")] Unnamed _;
-            [Term] public Expression Variable { get; set; }
+            [Term] public Expression Variable;
 
             public object Evaluate(Context context) {
                 var m = Variable.Evaluate(context) as Mutable;
@@ -60,12 +60,11 @@ namespace Spool.Harlowe
         }
 
 
-        [WhitespaceSeparated]
         abstract class Operator : Expression
         {
-            [Term] public Expression LHS { get; set; }
-            [IndirectLiteral(nameof(Op))] protected Unnamed _;
-            [Term] public Expression RHS { get; set; }
+            [Term] protected Expression LHS;
+            [IndirectLiteral(nameof(Op)), WhitespaceSurrounded] protected Unnamed _;
+            [Term] protected Expression RHS;
             protected abstract string Op { get; }
 
             private static readonly MethodInfo[] methods = typeof(OperatorImpl).GetMethods();
@@ -252,7 +251,7 @@ namespace Spool.Harlowe
 
         public class Variable : ObjectExpression, Mutable
         {
-            [CharSet("$_")] private char variableType { set => Global = value == '$'; }
+            [CharSet("$_")] private char variableType { get => Global ? '$' : '_'; set => Global = value == '$'; }
             public bool Global { get; set; }
             [CharRange("az", "AZ", "09", "__"), Repeat] public string Name { get; set; }
 
@@ -279,7 +278,7 @@ namespace Spool.Harlowe
         class HookRef : Expression
         {
             [Literal("?")] Unnamed _;
-            [CharRange("az", "AZ", "09", "__"), Repeat] public string Name { get; set; }
+            [CharRange("az", "AZ", "09", "__"), Repeat] public string Name;
 
             public object Evaluate(Context context)
             {
