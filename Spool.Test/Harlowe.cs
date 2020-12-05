@@ -76,25 +76,24 @@ namespace Spool.Test
 @"(print: ""Red"" + ""belly"")",
 @"Redbelly"
             },
-            // TODO: Fix 'params' calls; add spread operator
-//             new [] {
-// @"(print: (a: 2, 3, 4))",
-// @"[2, 3, 4]"
-//             },
-//             new [] {
-// @"(print: (a: 2, 3, 4,))",
-// @"[2, 3, 4]"
-//             },
-//             new [] {
-// @"(print: (a: ...(a: 2, 3, 4))",
-// @"[2, 3, 4]"
-//             },
+            new [] {
+@"(print: (a: 2, 3, 4))",
+@"[2, 3, 4]"
+            },
+            new [] {
+@"(print: (a: 2, 3, 4,))",
+@"[2, 3, 4]"
+            },
+            new [] {
+@"(print: (a: ...(a: 2, 3, 4))",
+@"[2, 3, 4]"
+            },
             new [] {
 @"$1.50",
 "$1.50"
             },
             new [] {
-@"(set: $plushieName to ""Felix"")(put: ""pencil"" into _heldItem)
+@"(set: $plushieName to Felix)(put: ""pencil"" into _heldItem)
 Your beloved plushie, $plushieName, awaits you after a long work day.
 You put your _heldItem down and lift it for a snuggle.",
 @"
@@ -180,7 +179,46 @@ And this.</mark>"
   ----
      -----",
 @"<hr /><hr /><hr />"
-            }
+            },
+            new []
+            {
+@"(set: $favouritefood to pizza)(set: $battlecry to ""Save a "" + $favouritefood + "" for me!"")$battlecry",
+@"Save a pizza for me!"
+            },
+            new []
+            {
+@"(set: $altitude to 10)(set: $enemyAltitude to 8)(set: _dist to $altitude - $enemyAltitude)_dist",
+@"2"
+            },
+            new []
+            {
+@"(set: $weapon to 'hands', $armour to 'naked')
+Armour $armour, using $weapon",
+@"
+Armour naked, using hands"
+            },
+            new []
+            {
+@"(set: $vases to 1)(set: $vases to it + 1)$vases",
+@"2"
+            },
+            new []
+            {
+@"(put: 2 into $batteries, 4 into $bottles)
+I have $batteries batteries and $bottles bottles",
+@"
+I have 2 batteries and 4 bottles"
+            },
+//             new []
+//             {
+// @"(put: 1 into $eggs)(put: $eggs + 2 into it)$eggs",
+// @"3"
+//             },
+//             new []
+//             {
+// @"(set: $arr to (a: 2, 3, 5))(move: $arr's 1st into $var)$var",
+// @"2"
+//             }
         };
     
 // TODO: (if: (num:"5") > 2)
@@ -196,6 +234,8 @@ And this.</mark>"
 // TODO: Verbatim markup
 // TODO: Aligner, column
 // TODO: Heading
+// TODO: Collapsed whitespace
+// TODO: Escaped chars
 
 
         [Theory]

@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using System.Linq;
 
 namespace Spool.Harlowe
 {
@@ -27,8 +28,19 @@ namespace Spool.Harlowe
         public BuiltInMacros(Context context) => Context = context;
         public Context Context { get; }
 
-        public void Set(SetFunction setter) => setter();
-        public void Put(PutFunction setter) => setter();
+        public void Set(params SetFunction[] setters)
+        {
+            foreach (var s in setters) {
+                s();
+            }
+        }
+        public void Put(params PutFunction[] setters)
+        {
+            foreach (var s in setters) {
+                s();
+            }
+        }
+
         public ICollection<object> DS(params object[] values) => DataSet(values);
         public ICollection<object> DataSet(params object[] values) => new HashSet<object>(values);
         public IDictionary DataMap(params object[] pairs) {
@@ -68,7 +80,15 @@ namespace Spool.Harlowe
             public Print(object value) => Value = value;
             public object Value { get; }
 
-            public void Render(Context context) => context.AddText(Value?.ToString() ?? "NULL");
+            public void Render(Context context)
+            {
+                if (Value is Array a)
+                {
+                    context.AddText("[" + string.Join(", ", a.Cast<object>().Select(x => x?.ToString() ?? "NULL")) + "]");
+                } else {
+                    context.AddText(Value?.ToString() ?? "NULL");
+                }
+            }
         }
 
         public Renderable display(string passage) => Context.Passages[passage];

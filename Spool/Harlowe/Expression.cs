@@ -321,9 +321,10 @@ namespace Spool.Harlowe
         {
             [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
+            [Optional] protected Comma _ { get; set; } // TODO: Replace with TrailingSeparator when available
 
             [WhitespaceSurrounded]
-            private class Comma {
+            protected struct Comma {
                 [Literal(",")] Unnamed _;
             }
 
@@ -334,7 +335,16 @@ namespace Spool.Harlowe
                 foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase)))
                 {
                     try {
-                        return m.Invoke(context.MacroProvider, args);
+                        var mArgs = args;
+                        var parameters = m.GetParameters();
+                        if (parameters.Length > 0 && parameters.Last().GetCustomAttribute<ParamArrayAttribute>() != null)
+                        {
+                            var inArray = args.Skip(parameters.Length - 1).ToArray();
+                            var pArray = Array.CreateInstance(parameters.Last().ParameterType.GetElementType(), inArray.Length);
+                            inArray.CopyTo(pArray, 0);
+                            mArgs = args.Take(parameters.Length - 1).Append(pArray).ToArray();
+                        }
+                        return m.Invoke(context.MacroProvider, mArgs);
                     } catch (TargetInvocationException e) {
                         throw e.InnerException;
                     } catch {
@@ -363,6 +373,21 @@ namespace Spool.Harlowe
         class QuotedString : Expression
         {
             [Regex(@"[^""]*")] public string Text { get; set; }
+
+            public object Evaluate(Context context) => Text;
+        }
+
+        [SurroundBy("'")]
+        class SingleQuotedString : Expression
+        {
+            [Regex(@"[^']*")] public string Text { get; set; }
+
+            public object Evaluate(Context context) => Text;
+        }
+
+        class BareString : Expression
+        {
+            [CharRange("az", "AZ", "09", "__", "--"), Repeat] public string Text { get; set; }
 
             public object Evaluate(Context context) => Text;
         }
