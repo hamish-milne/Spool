@@ -72,7 +72,7 @@ namespace Spool.Harlowe
             public object Evaluate(Context context)
             {
                 var args = new []{LHS.Evaluate(context), RHS.Evaluate(context)};
-                foreach (var m in methods)
+                foreach (var m in methods.Where(m => m.Name == GetType().Name))
                 {
                     try {
                         return m.Invoke(null, args);
@@ -254,7 +254,7 @@ namespace Spool.Harlowe
         {
             [CharSet("$_")] private char variableType { get => Global ? '$' : '_'; set => Global = value == '$'; }
             public bool Global { get; set; }
-            [CharRange("az", "AZ", "09", "__"), Repeat] public string Name { get; set; }
+            [Regex(@"[a-zA-Z_][a-zA-Z0-9_]*")] public string Name { get; set; }
 
             public override object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
@@ -281,16 +281,28 @@ namespace Spool.Harlowe
             [Literal("?")] Unnamed _;
             [CharRange("az", "AZ", "09", "__"), Repeat] public string Name;
 
+            // TODO: Change these depending on the renderer
+            private static readonly Dictionary<string, XName> BuiltInNames = new Dictionary<string, XName>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Page", XName.Get("tw-story") },
+                { "Passage", XName.Get("tw-passage") },
+                { "Sidebar", XName.Get("tw-sidebar") },
+                { "Link", XName.Get("link") }
+            };
+
             public object Evaluate(Context context)
             {
+                BuiltInNames.TryGetValue(Name, out var builtInName);
                 var nameAttr = XName.Get("name");
                 IEnumerable<XContainer> generator(XContainer root)
                 {
                     var current = root.FirstNode;
                     while (current != null)
                     {
-                        if (current is XContainer c && (current as XElement)?.Attribute(nameAttr)?.Value == Name) {
-                            yield return c;
+                        if (current is XElement el && (
+                            el.Attribute(nameAttr)?.Value?.Equals(Name, StringComparison.OrdinalIgnoreCase) == true
+                            || el.Name == builtInName)) {
+                            yield return el;
                         }
                         var next = current.NextNode;
                         while (next == null && current != null) {

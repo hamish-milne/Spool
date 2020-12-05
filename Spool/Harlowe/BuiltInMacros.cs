@@ -114,5 +114,56 @@ namespace Spool.Harlowe
                 throw new NotImplementedException();
             }
         }
+
+        public Changer font(string font) => new Font(font);
+
+        class Font : Changer
+        {
+            public Font(string fontName) => FontName = fontName;
+            public string FontName { get; }
+
+            public void Apply(ref bool hidden, ref string name) {}
+
+            public XElement Render(Context context, XElement source)
+            {
+                var el = new XElement(XName.Get("font"));
+                el.SetAttributeValue(XName.Get("value"), FontName);
+                source.Remove();
+                context.AddNode(el);
+                el.Add(source);
+                return el;
+            }
+        }
+
+
+        public Changer textColour(string color) => new TextColor(color);
+        public Changer textColor(string color) => new TextColor(color);
+
+        class TextColor : Changer
+        {
+            public TextColor(string color) => Color = color;
+            public string Color { get; }
+
+            public void Apply(ref bool hidden, ref string name) {}
+
+            public XElement Render(Context context, XElement source)
+            {
+                var el = new XElement(XName.Get("color"));
+                el.SetAttributeValue(XName.Get("value"), Color);
+                source.Remove();
+                context.AddNode(el);
+                el.Add(source);
+                return el;
+            }
+        }
+
+        public Changer @if(bool condition) => condition ? Null.Instance : Hidden.Instance;
+
+        class Null : Changer
+        {
+            public static Changer Instance { get; } = new Null();
+            public void Apply(ref bool hidden, ref string name) {}
+            public XElement Render(Context context, XElement source) => source;
+        }
     }
 }
