@@ -16,17 +16,17 @@ namespace Spool.Harlowe
         object Evaluate(Context context);
     }
 
+    interface Mutable : Expression
+    {
+        void Set(Context context, object value);
+        void Delete(Context context);
+    }
 
     static class Expressions
     {
 
-        interface Mutable : Expression
-        {
-            void Set(Context context, object value);
-        }
-
         [WhitespaceSeparated]
-        class VariableToValue : Expression
+        class ToExpression : Expression
         {
             [Term] public Expression Variable;
             [Literal("to")] Unnamed _;
@@ -38,12 +38,15 @@ namespace Spool.Harlowe
                     throw new Exception("Value not mutable");
                 }
                 var v = Value.Evaluate(context);
-                return new SetFunction(() => m.Set(context, v));
+                return new VariableToValue {
+                    Source = v,
+                    Destination = m
+                };
             }
         }
 
         [WhitespaceSeparated]
-        class ValueIntoVariable : Expression
+        class IntoExpression : Expression
         {
             [Term] public Expression Value;
             [Literal("into")] Unnamed _;
@@ -55,7 +58,11 @@ namespace Spool.Harlowe
                 if (m == null) {
                     throw new Exception("Value not mutable");
                 }
-                return new PutFunction(() => m.Set(context, v));
+                return new ValueIntoVariable {
+                    Source = v,
+                    Destination = m,
+                    ToRemove = Value as Mutable
+                };
             }
         }
 
@@ -225,7 +232,16 @@ namespace Spool.Harlowe
         class MemberAccess : Mutable
         {
             [Suffix("'s")] public Expression Object { get; set; }
-            [Term] public Expression Member { get; set; }
+            [Alternative(
+                typeof(Macro),
+                typeof(Parenthesized),
+                typeof(Variable),
+                typeof(Integer),
+                typeof(Float),
+                typeof(QuotedString),
+                typeof(SingleQuotedString),
+                typeof(BareString)
+            )] public Expression Member { get; set; }
 
             public object Evaluate(Context context)
             {
@@ -238,8 +254,8 @@ namespace Spool.Harlowe
                     switch (member) {
                         case "length":
                             return array.Count;
-                        case int idx:
-                            return array[idx];
+                        case double idx:
+                            return array[(int)idx - 1];
                     }
                     break;
                 }
@@ -253,12 +269,31 @@ namespace Spool.Harlowe
                 switch (obj) {
                 case IDictionary map:
                     map[member] = value;
-                    break;
+                    return;
                 case IList array:
                     switch (member) {
-                        case int idx:
-                            array[idx] = value;
-                            break;
+                        case double idx:
+                            array[(int)idx - 1] = value;
+                            return;
+                    }
+                    break;
+                }
+                throw new Exception("Member not found");
+            }
+
+            public void Delete(Context context)
+            {
+                var obj = Object.Evaluate(context);
+                var member = Member.Evaluate(context);
+                switch (obj) {
+                case IDictionary map:
+                    map.Remove(member);
+                    return;
+                case IList array:
+                    switch (member) {
+                        case double idx:
+                            array.RemoveAt((int)idx - 1);
+                            return;
                     }
                     break;
                 }
@@ -275,12 +310,14 @@ namespace Spool.Harlowe
             public override object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
             public void Set(Context context, object value) => (Global ? context.Globals : context.Locals)[Name] = value;
+
+            public void Delete(Context context) => (Global ? context.Globals : context.Locals).Remove(Name);
         }
 
         class Integer : Expression
         {
             [CharRange("09"), Repeat] string number;
-            [Regex("st|nd|rd|th")] Unnamed _;
+            [Optional, Regex("st|nd|rd|th")] Unnamed _;
 
             public object Evaluate(Context context) => (double)int.Parse(number);
         }

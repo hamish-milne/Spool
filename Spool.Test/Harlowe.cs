@@ -221,15 +221,14 @@ I have 2 batteries and 4 bottles"
 // @"(put: 1 into $eggs)(put: $eggs + 2 into it)$eggs",
 // @"3"
 //             },
-//             new []
-//             {
-// @"(set: $arr to (a: 2, 3, 5))(move: $arr's 1st into $var)$var",
-// @"2"
-//             }
+            new []
+            {
+@"(set: $arr to (a: 2, 3, 5))(move: $arr's 2nd into $var)$var; (print: $arr)",
+@"3; [2, 5]"
+            }
         };
     
 // TODO: (if: (num:"5") > 2)
-// TODO: (a: 2, 3, 4,)
 // TODO: (either: ...$array)
 
 // TODO: 'Named hook markup' clicks etc.
@@ -247,7 +246,7 @@ I have 2 batteries and 4 bottles"
 
         [Theory]
         [MemberData(nameof(ExampleMarkup))]
-        public void LinkMarkup(string input, string expected)
+        public void StaticMarkup(string input, string expected)
         {
             var passage = Lexico.Lexico.Parse<Passage>(input, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true});
             var context = new Context();

@@ -20,24 +20,45 @@ namespace Spool.Harlowe
         XElement Render(Context context, XElement source);
     }
 
-    public delegate void SetFunction();
-    public delegate void PutFunction();
+    struct VariableToValue
+    {
+        public object Source;
+        public Mutable Destination;
+    }
+
+    struct ValueIntoVariable
+    {
+        public object Source;
+        public Mutable Destination;
+        public Mutable ToRemove;
+    }
 
     class BuiltInMacros
     {
         public BuiltInMacros(Context context) => Context = context;
         public Context Context { get; }
 
-        public void Set(params SetFunction[] setters)
+        public void Set(params VariableToValue[] setters)
         {
             foreach (var s in setters) {
-                s();
+                s.Destination.Set(Context, s.Source);
             }
         }
-        public void Put(params PutFunction[] setters)
+        public void Put(params ValueIntoVariable[] setters)
         {
             foreach (var s in setters) {
-                s();
+                s.Destination.Set(Context, s.Source);
+            }
+        }
+
+        public void Move(params ValueIntoVariable[] setters)
+        {
+            foreach (var s in setters) {
+                if (s.ToRemove == null) {
+                    throw new Exception("Source must be a variable");
+                }
+                s.Destination.Set(Context, s.Source);
+                s.ToRemove.Delete(Context);
             }
         }
 
@@ -51,8 +72,8 @@ namespace Spool.Harlowe
             return map;
         }
         public IDictionary DM(params object[] pairs) => DataMap(pairs);
-        public Array Array(params object[] values) => values;
-        public Array A(params object[] values) => Array(values);
+        public IList Array(params object[] values) => values.ToList();
+        public IList A(params object[] values) => Array(values);
 
 
         public Command show(IEnumerable<XContainer> nodes) => new Show(nodes);
@@ -83,13 +104,13 @@ namespace Spool.Harlowe
             private static void DoPrint(Context context, object value)
             {
 
-                if (value is Array a)
+                if (value is IList a)
                 {
                     context.AddText("[");
-                    for (int i = 0; i < a.Length; i++)
+                    for (int i = 0; i < a.Count; i++)
                     {
-                        DoPrint(context, a.GetValue(i));
-                        if (i+1 < a.Length) {
+                        DoPrint(context, a[i]);
+                        if (i+1 < a.Count) {
                             context.AddText(", ");
                         }
                     }
