@@ -31,35 +31,35 @@ namespace Spool.Test
 @"[[A<-B<-C<-D<-E]]",
 @"<link href=""A"">B&lt;-C&lt;-D&lt;-E</link>"
             },
-            // TODO: Styling syntax
+            // TODO: Allow more constructs within links
 //             new [] {
 // @"[[//Seagulls!//]]",
 // @"<link href=""Seagulls""><i>Seagulls!</i></link>"
 //             },
-//             new [] {
-// @"//text//",
-// @"<i>text</i>"
-//             },
-//             new [] {
-// @"''text''",
-// @"<b>text</b>"
-//             },
-//             new [] {
-// @"~~text~~",
-// @"<s>text</s>"
-//             },
-//             new [] {
-// @"*text*",
-// @"<em>text</em>"
-//             },
-//             new [] {
-// @"**text**",
-// @"<strong>text</strong>"
-//             },
-//             new [] {
-// @"meters/second^^2^^",
-// @"meters/second<sup>2</sup>"
-//             },
+            new [] {
+@"//text//",
+@"<i>text</i>"
+            },
+            new [] {
+@"''text''",
+@"<b>text</b>"
+            },
+            new [] {
+@"~~text~~",
+@"<s>text</s>"
+            },
+            new [] {
+@"*text*",
+@"<em>text</em>"
+            },
+            new [] {
+@"**text**",
+@"<strong>text</strong>"
+            },
+            new [] {
+@"meters/second^^2^^",
+@"meters/second<sup>2</sup>"
+            },
             new [] {
 @"(print: 54)",
 @"54"
@@ -155,7 +155,7 @@ $x[As is this text.]",
         [MemberData(nameof(ExampleMarkup))]
         public void LinkMarkup(string input, string expected)
         {
-            var passage = Lexico.Lexico.Parse<Passage>(input/*, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}*/);
+            var passage = Lexico.Lexico.Parse<Passage>(input, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true});
             var context = new Context();
             passage.Render(context);
             var actual = ((XContainer)context.Screen.FirstNode).FirstNode.ToString(SaveOptions.DisableFormatting);

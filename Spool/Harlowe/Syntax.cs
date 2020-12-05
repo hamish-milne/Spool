@@ -26,6 +26,7 @@ namespace Spool.Harlowe
                 typeof(NewLine),
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
+                typeof(Style),
                 typeof(PlainText)
             )]
             public List<Renderable> Items;
@@ -273,9 +274,87 @@ namespace Spool.Harlowe
             public override List<Renderable> GetContent() => content.Items;
         }
 
+        abstract class Style : Renderable
+        {
+            public abstract void Render(Context context);
+            public abstract string Op { get; }
+        }
+
+        abstract class Style<T> : Style where T : Style, new()
+        {
+            protected struct Item<T> where T : Style, new() {
+
+                private string Op => new T().Op;
+
+                [Not, IndirectLiteral(nameof(Op))] public Unnamed _;
+
+                [Alternative(
+                    typeof(NewLine),
+                    typeof(CollapsedSpan),
+                    typeof(AppliedHook),
+                    typeof(Style),
+                    typeof(PlainText)
+                )]
+                public Renderable item;
+            }
+
+            [IndirectLiteral(nameof(Op))] protected Unnamed prefix;
+            [Term] protected List<Item<T>> inner;
+            [IndirectLiteral(nameof(Op))] protected Unnamed suffix;
+
+            protected abstract XName Tag { get; }
+
+            public override void Render(Context context)
+            {
+                var el = new XElement(Tag);
+                context.AddNode(el);
+                var state = context.Push(el, CursorPos.Child);
+                foreach (var c in inner) {
+                    c.item.Render(context);
+                }
+                context.Pop(state);
+            }
+        }
+
+        class Italics : Style<Italics>
+        {
+            public override string Op => "//";
+            protected override XName Tag => XName.Get("i");
+        }
+
+        class Bold : Style<Bold>
+        {
+            public override string Op => "''";
+            protected override XName Tag => XName.Get("b");
+        }
+
+        class Strikethrough : Style<Strikethrough>
+        {
+            public override string Op => "~~";
+            protected override XName Tag => XName.Get("s");
+        }
+
+        class Emphasis : Style<Emphasis>
+        {
+            public override string Op => "*";
+            protected override XName Tag => XName.Get("em");
+        }
+
+        class Strong : Style<Strong>
+        {
+            public override string Op => "**";
+            protected override XName Tag => XName.Get("strong");
+        }
+
+        class Superscript : Style<Superscript>
+        {
+            public override string Op => "^^";
+            protected override XName Tag => XName.Get("sup");
+        }
+
         class PlainText : Renderable
         {
-            [Regex(@"[^\]][^\(\[\$\_\]]*")] public string Text { get; set; }
+            [Regex(@"[^\]][^\(\[$_\]*/'~\^]*")] public string Text { get; set; }
 
             public void Render(Context context)
             {
