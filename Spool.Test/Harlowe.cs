@@ -115,7 +115,7 @@ _assistantText[Don't touch me, please! I'm ticklish.]",
             var context = new Context();
             passage.Render(context);
             var actual = context.Screen.ToString(SaveOptions.DisableFormatting);
-            Assert.Equal($"<passage>{expected}</passage>", actual);
+            Assert.Equal($"<passage>{expected.Replace("\r", "")}</passage>", actual.Replace("\r", ""));
         }
 
         

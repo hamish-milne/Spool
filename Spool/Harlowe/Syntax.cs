@@ -107,6 +107,7 @@ namespace Spool.Harlowe
         [WhitespaceSeparated, SurroundBy("{", "}")]
         class CollapsedSpan : Renderable
         {
+            [Pass, Cut] Unnamed _;
             [Term] ContentList content;
 
             public void Render(Context context)
@@ -240,10 +241,16 @@ namespace Spool.Harlowe
                     var macroResult = changers.Last().Evaluate(context);
                     if (macroResult is Renderable r) {
                         r.Render(context);
-                        return;
+                    } else if (macroResult is string || macroResult is double) {
+                        context.AddText(macroResult.ToString());
+                    } else if (macroResult is Command cmd) {
+                        cmd.Run(context);
+                    } else if (macroResult == null) {
+                        // 'Instant' e.g. Set, Put
                     } else {
                         throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
                     }
+                    return;
                 } else {
                     throw new NotImplementedException();
                 }
@@ -298,6 +305,7 @@ namespace Spool.Harlowe
         [SurroundBy("[[", "]]")]
         class PlainLink : LinkBase
         {
+            [Pass, Cut] Unnamed _;
             [Regex(@"((?!]]).)+")] string textLink;
 
             public override string Link => textLink;
@@ -324,6 +332,7 @@ namespace Spool.Harlowe
         [SurroundBy("[", "]")]
         class ClosedHook : HookBase
         {
+            [Pass, Cut] Unnamed _;
             [Term] ContentList content;
 
             public override List<Renderable> GetContent() => content.Items;
@@ -331,7 +340,7 @@ namespace Spool.Harlowe
 
         class OpenHook : HookBase
         {
-            [Literal("[==")] Unnamed _;
+            [Literal("[=="), Cut] Unnamed _;
             [Term] ContentList content;
 
             public override List<Renderable> GetContent() => content.Items;

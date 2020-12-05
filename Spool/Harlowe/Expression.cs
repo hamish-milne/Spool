@@ -33,11 +33,11 @@ namespace Spool.Harlowe
             [Term] public Expression Value;
 
             public object Evaluate(Context context) {
-                var m = Variable.Evaluate(context) as Mutable;
-                var v = Value.Evaluate(context);
+                var m = Variable as Mutable;
                 if (m == null) {
                     throw new Exception("Value not mutable");
                 }
+                var v = Value.Evaluate(context);
                 return new SetFunction(() => m.Set(context, v));
             }
         }
@@ -50,7 +50,7 @@ namespace Spool.Harlowe
             [Term] public Expression Variable;
 
             public object Evaluate(Context context) {
-                var m = Variable.Evaluate(context) as Mutable;
+                var m = Variable as Mutable;
                 var v = Value.Evaluate(context);
                 if (m == null) {
                     throw new Exception("Value not mutable");
@@ -174,6 +174,7 @@ namespace Spool.Harlowe
         [WhitespaceSeparated, SurroundBy("(", ")")]
         class Parenthesized : Expression
         {
+            [Pass, Cut] Unnamed _;
             [Term] Expression inner;
 
             public object Evaluate(Context context) => inner.Evaluate(context);
@@ -306,7 +307,7 @@ namespace Spool.Harlowe
         [WhitespaceSeparated, SurroundBy("(", ")")]
         public class Macro : ObjectExpression
         {
-            [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":")] public string Name { get; set; }
+            [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
             [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
 
             [WhitespaceSurrounded]
