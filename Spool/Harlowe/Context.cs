@@ -1,3 +1,5 @@
+using System.IO;
+using System.Xml;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
@@ -54,12 +56,31 @@ namespace Spool.Harlowe
             }
         }
 
+        class MyXmlReader : XmlTextReader
+        {
+            public MyXmlReader(TextReader tr) : base(tr) {}
+            public override void ResolveEntity()
+            {
+                return;
+            }
+        }
+
         public void AddText(string text)
         {
-            if (PreviousNode is XText tnode) {
-                tnode.Value += text;
-            } else {
-                AddNode(new XText(text));
+            // TODO: Support HTML entities
+            var reader = new MyXmlReader(new StringReader($"<x>{text}</x>"))
+            {
+                EntityHandling = EntityHandling.ExpandCharEntities
+            };
+            reader.Read();
+            var node = (XContainer)XNode.ReadFrom(reader);
+            foreach (var readNode in node.Nodes())
+            {
+                if (readNode is XText tread && PreviousNode is XText tnode) {
+                    tnode.Value += tread.Value;
+                } else {
+                    AddNode(readNode);
+                }
             }
         }
     }

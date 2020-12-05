@@ -23,6 +23,7 @@ namespace Spool.Harlowe
         struct ContentList
         {
             [Repeat(Min = 0), Alternative(
+                typeof(HorizontalRule),
                 typeof(NewLine),
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
@@ -356,15 +357,23 @@ namespace Spool.Harlowe
 
         class PlainText : Renderable
         {
-            [Regex(@"[^\]][^\|\(\[$_\]*/'~\^]*")] public string Text { get; set; }
+            [Regex(@"[^\]]((?!//)[^\|\(\[$_\]*'~\^])*")] public string Text { get; set; }
 
             public void Render(Context context)
             {
-                if (context.Cursor.LastNode is XText prevText) {
-                    prevText.Value += Text;
-                } else {
-                    context.Cursor.Add(new XText(Text));
-                }
+                context.AddText(Text);
+            }
+        }
+
+        class HorizontalRule : Renderable
+        {
+            [Alternative(typeof(SOF), typeof(EOL))] Unnamed _;
+            [WhitespaceSurrounded, CharSet("-"), Repeat(Min = 3)] string __;
+            [LookAhead, EOL] Unnamed ___;
+
+            public void Render(Context context)
+            {
+                context.AddNode(new XElement(XName.Get("hr")));
             }
         }
 

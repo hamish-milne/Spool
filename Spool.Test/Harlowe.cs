@@ -160,6 +160,26 @@ This part is also in a hidden hook named ""2"".",
 @"<div name=""1"">
 The rest of this passage is in a hook named ""1"".
 <hidden name=""2"" /></div>"
+            },
+            new []
+            {
+@"<mark>This is marked text.
+
+&lt; So is this.
+<!-- Comment -->
+And this.</mark>",
+@"<mark>This is marked text.
+
+&lt; So is this.
+<!-- Comment -->
+And this.</mark>"
+            },
+            new []
+            {
+@"        ---
+  ----
+     -----",
+@"<hr /><hr /><hr />"
             }
         };
     
@@ -171,6 +191,11 @@ The rest of this passage is in a hook named ""1"".
 // TODO: Built-in names w/ enchant
 // TODO: Hidden open hook w/ click
 
+// TODO: List syntax (bullet, numbered)
+// TODO: data-raw attribute?
+// TODO: Verbatim markup
+// TODO: Aligner, column
+// TODO: Heading
 
 
         [Theory]
