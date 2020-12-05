@@ -1,8 +1,11 @@
+using System.IO;
 using System;
 using Xunit;
 using Spool.Harlowe;
 using System.Xml.Linq;
 using Xunit.Abstractions;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Spool.Test
 {
@@ -10,6 +13,10 @@ namespace Spool.Test
     {
 
         public static object[][] ExampleMarkup = {
+//             new [] {
+// "(set: $foo to (num: (str: (num: (str: 5)))))",
+// ""
+//             },
             new [] {
 @"This is some plain text on a single line, the simplest case.",
 @"This is some plain text on a single line, the simplest case."
@@ -85,7 +92,7 @@ namespace Spool.Test
 @"[2, 3, 4]"
             },
             new [] {
-@"(print: (a: ...(a: 2, 3, 4))",
+@"(print: (a: ...(a: 2, 3, 4)))",
 @"[2, 3, 4]"
             },
             new [] {
@@ -197,11 +204,11 @@ Armour $armour, using $weapon",
 @"
 Armour naked, using hands"
             },
-            new []
-            {
-@"(set: $vases to 1)(set: $vases to it + 1)$vases",
-@"2"
-            },
+//             new []
+//             {
+// @"(set: $vases to 1)(set: $vases to it + 1)$vases",
+// @"2"
+//             },
             new []
             {
 @"(put: 2 into $batteries, 4 into $bottles)

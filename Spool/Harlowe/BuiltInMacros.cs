@@ -80,15 +80,26 @@ namespace Spool.Harlowe
             public Print(object value) => Value = value;
             public object Value { get; }
 
-            public void Render(Context context)
+            private static void DoPrint(Context context, object value)
             {
-                if (Value is Array a)
+
+                if (value is Array a)
                 {
-                    context.AddText("[" + string.Join(", ", a.Cast<object>().Select(x => x?.ToString() ?? "NULL")) + "]");
+                    context.AddText("[");
+                    for (int i = 0; i < a.Length; i++)
+                    {
+                        DoPrint(context, a.GetValue(i));
+                        if (i+1 < a.Length) {
+                            context.AddText(", ");
+                        }
+                    }
+                    context.AddText("]");
                 } else {
-                    context.AddText(Value?.ToString() ?? "NULL");
+                    context.AddText(value?.ToString() ?? "NULL");
                 }
             }
+
+            public void Render(Context context) => DoPrint(context, Value);
         }
 
         public Renderable display(string passage) => Context.Passages[passage];

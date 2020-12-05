@@ -60,11 +60,27 @@ namespace Spool.Harlowe
         }
 
 
-        abstract class Operator : Expression
+        // TODO: Fix this so that order of operations is respected
+        class SimpleOperatorExpr : Expression
         {
             [Term] protected Expression LHS;
-            [IndirectLiteral(nameof(Op)), WhitespaceSurrounded] protected Unnamed _;
+            [WhitespaceSurrounded] protected Operator Operator;
             [Term] protected Expression RHS;
+
+            public object Evaluate(Context context)
+            {
+                Operator.LHS = LHS;
+                Operator.RHS = RHS;
+                return Operator.Evaluate(context);
+            }
+        }
+
+
+        abstract class Operator
+        {
+            /*[Term]*/ public Expression LHS;
+            [IndirectLiteral(nameof(Op))/*, WhitespaceSurrounded*/] protected Unnamed _;
+            /*[Term]*/ public Expression RHS;
             protected abstract string Op { get; }
 
             private static readonly MethodInfo[] methods = typeof(OperatorImpl).GetMethods();
@@ -319,8 +335,14 @@ namespace Spool.Harlowe
         [WhitespaceSeparated, SurroundBy("(", ")")]
         public class Macro : ObjectExpression
         {
+            public struct Argument
+            {
+                [Optional, Literal("...")] public string spread;
+                [Term] public Expression value;
+            }
+
             [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
-            [SeparatedBy(typeof(Comma))] public List<Expression> Arguments { get; } = new List<Expression>();
+            [SeparatedBy(typeof(Comma))] public List<Argument> Arguments { get; } = new List<Argument>();
             [Optional] protected Comma _ { get; set; } // TODO: Replace with TrailingSeparator when available
 
             [WhitespaceSurrounded]
@@ -331,7 +353,25 @@ namespace Spool.Harlowe
             public override object Evaluate(Context context)
             {
                 var normalizedName = Name.Replace("-", "").Replace("_", "");
-                var args = Arguments.Select(x => x.Evaluate(context)).ToArray();
+                IEnumerable<object> GetArgList()
+                {
+                    foreach (var a in Arguments)
+                    {
+                        if (a.spread == null) {
+                            yield return a.value.Evaluate(context);
+                        } else {
+                            var toSpread = a.value.Evaluate(context);
+                            if (toSpread is IEnumerable enumerable) {
+                                foreach (var e in enumerable) {
+                                    yield return e;
+                                }
+                            } else {
+                                throw new Exception($"Tried to use spread operator on {toSpread}");
+                            }
+                        }
+                    }
+                }
+                var args = GetArgList().ToArray();
                 foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase)))
                 {
                     try {
