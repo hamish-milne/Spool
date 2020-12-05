@@ -104,7 +104,7 @@ namespace Spool.Harlowe
                         throw new Exception("Hook already named");
                     }
                     name = this.name;
-                    if (this.hidden == ')') {
+                    if (this.hidden == '(') {
                         hidden = true;
                     }
                 }
@@ -159,6 +159,7 @@ namespace Spool.Harlowe
                 XElement content;
                 if (hidden == true && !forceShow) {
                     content = new XElement(XName.Get("hidden"));
+                    context.AddNode(content);
                     context.Hidden.Add(content, new ShowHiddenHook(this));
                 } else if (hook != null) {
                     content = hook.body.Render(context);
@@ -268,7 +269,8 @@ namespace Spool.Harlowe
 
         class OpenHook : HookBase
         {
-            [Literal("[=="), Cut] Unnamed _;
+            [Literal("["), Cut] Unnamed _;
+            [CharSet("="), Repeat] string __;
             [Term] ContentList content;
 
             public override List<Renderable> GetContent() => content.Items;
@@ -354,7 +356,7 @@ namespace Spool.Harlowe
 
         class PlainText : Renderable
         {
-            [Regex(@"[^\]][^\(\[$_\]*/'~\^]*")] public string Text { get; set; }
+            [Regex(@"[^\]][^\|\(\[$_\]*/'~\^]*")] public string Text { get; set; }
 
             public void Render(Context context)
             {

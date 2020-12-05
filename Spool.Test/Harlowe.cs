@@ -140,6 +140,27 @@ $x[As is this text.]",
 
 <div name=""s2"">This hook is named 's2'</div>"
             },
+            new [] {
+@"|visible>[This hook is visible when the passage loads.]
+|cloaked)[This hook is hidden when the passage loads, and needs a macro like `(show:?cloaked)` to reveal it.]
+
+[My commanding officer - a war hero, and a charismatic face for the military.]<sight|
+[Privately, I despise the man. His vacuous boosterism makes a mockery of my sacrifices.](thoughts|",
+@"<div name=""visible"">This hook is visible when the passage loads.</div>
+<hidden name=""cloaked"" />
+
+<div name=""sight"">My commanding officer - a war hero, and a charismatic face for the military.</div>
+<hidden name=""thoughts"" />"
+            },
+            new [] {
+@"|1>[=
+The rest of this passage is in a hook named ""1"".
+|2)[==
+This part is also in a hidden hook named ""2"".",
+@"<div name=""1"">
+The rest of this passage is in a hook named ""1"".
+<hidden name=""2"" /></div>"
+            }
         };
     
 // TODO: (if: (num:"5") > 2)
@@ -148,6 +169,7 @@ $x[As is this text.]",
 
 // TODO: 'Named hook markup' clicks etc.
 // TODO: Built-in names w/ enchant
+// TODO: Hidden open hook w/ click
 
 
 
