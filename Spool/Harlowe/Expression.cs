@@ -81,6 +81,17 @@ namespace Spool.Harlowe
                 return Operator.Evaluate(context);
             }
         }
+        class SimpleUnaryExpr : Expression
+        {
+            [WhitespaceSurrounded] protected Unary Operator;
+            [Term] protected Expression RHS;
+
+            public object Evaluate(Context context)
+            {
+                Operator.RHS = RHS;
+                return Operator.Evaluate(context);
+            }
+        }
 
 
         abstract class Operator
@@ -128,10 +139,15 @@ namespace Spool.Harlowe
             public static bool Is(object lhs, object rhs) => lhs.Equals(rhs);
             public static bool IsNot(object lhs, object rhs) => !lhs.Equals(rhs);
 
-            public bool Less(double lhs, double rhs) => lhs < rhs;
-            public bool Greater(double lhs, double rhs) => lhs > rhs;
-            public bool LessOrEqual(double lhs, double rhs) => lhs <= rhs;
-            public bool GreaterOrEqual(double lhs, double rhs) => lhs >= rhs;
+            public static bool Less(double lhs, double rhs) => lhs < rhs;
+            public static bool Greater(double lhs, double rhs) => lhs > rhs;
+            public static bool LessOrEqual(double lhs, double rhs) => lhs <= rhs;
+            public static bool GreaterOrEqual(double lhs, double rhs) => lhs >= rhs;
+
+            public static bool Or(bool lhs, bool rhs) => lhs || rhs;
+            public static bool And(bool lhs, bool rhs) => lhs && rhs;
+
+            public static bool Not(bool rhs) => !rhs;
         }
 
         class Less : Operator
@@ -170,6 +186,14 @@ namespace Spool.Harlowe
         {
             protected override string Op => "matches";
         }
+        class Or : Operator
+        {
+            protected override string Op => "or";
+        }
+        class And : Operator
+        {
+            protected override string Op => "and";
+        }
         class Add : Operator
         {
             protected override string Op => "+";
@@ -194,6 +218,37 @@ namespace Spool.Harlowe
         {
             protected override string Op => "of";
         }
+
+        abstract class Unary
+        {
+            [IndirectLiteral(nameof(Op))/*, WhitespaceSurrounded*/] protected Unnamed _;
+            /*[Term]*/ public Expression RHS;
+            protected abstract string Op { get; }
+
+            private static readonly MethodInfo[] methods = typeof(OperatorImpl).GetMethods();
+
+            public object Evaluate(Context context)
+            {
+                var args = new []{RHS.Evaluate(context)};
+                foreach (var m in methods.Where(m => m.Name == GetType().Name))
+                {
+                    try {
+                        return m.Invoke(null, args);
+                    } catch (TargetInvocationException e) {
+                        throw e.InnerException;
+                    } catch {
+                        continue;
+                    }
+                }
+                throw new Exception($"No '{GetType().Name}' operator found for arguments '{args[1]}'");
+            }
+        }
+
+        class Not : Unary
+        {
+            protected override string Op => "not";
+        }
+
         [WhitespaceSeparated, SurroundBy("(", ")")]
         class Parenthesized : Expression
         {
@@ -379,7 +434,7 @@ namespace Spool.Harlowe
             }
 
             [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
-            [SeparatedBy(typeof(Comma))] public List<Argument> Arguments { get; } = new List<Argument>();
+            [SeparatedBy(typeof(Comma)), Repeat(Min = 0)] public List<Argument> Arguments { get; } = new List<Argument>();
             [Optional] protected Comma _ { get; set; } // TODO: Replace with TrailingSeparator when available
 
             [WhitespaceSurrounded]

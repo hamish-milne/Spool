@@ -16,7 +16,7 @@ namespace Spool.Harlowe
 
     public interface Changer
     {
-        void Apply(ref bool hidden, ref string name);
+        void Apply(ref bool? hidden, ref string name);
         XElement Render(Context context, XElement source);
     }
 
@@ -129,7 +129,7 @@ namespace Spool.Harlowe
         class Hidden : Changer
         {
             public static Hidden Instance { get; } = new Hidden();
-            public void Apply(ref bool hidden, ref string name) => hidden = true;
+            public void Apply(ref bool? hidden, ref string name) => hidden = true;
             public XElement Render(Context context, XElement source) => source;
         }
 
@@ -174,7 +174,7 @@ namespace Spool.Harlowe
             public Font(string fontName) => FontName = fontName;
             public string FontName { get; }
 
-            public void Apply(ref bool hidden, ref string name) {}
+            public void Apply(ref bool? hidden, ref string name) {}
 
             public XElement Render(Context context, XElement source)
             {
@@ -196,7 +196,7 @@ namespace Spool.Harlowe
             public TextColor(string color) => Color = color;
             public string Color { get; }
 
-            public void Apply(ref bool hidden, ref string name) {}
+            public void Apply(ref bool? hidden, ref string name) {}
 
             public XElement Render(Context context, XElement source)
             {
@@ -209,13 +209,16 @@ namespace Spool.Harlowe
             }
         }
 
-        public Changer @if(bool condition) => condition ? Null.Instance : Hidden.Instance;
+        public Changer @if(bool condition) => condition ? NullChanger.Instance : Hidden.Instance;
+        public Changer unless(bool condition) => condition ? Hidden.Instance : NullChanger.Instance;
+        public Changer elseIf(bool condition) => (condition && Context.PreviousCondition == true) ? NullChanger.Instance : Hidden.Instance;
+        public Changer @else() => elseIf(true);
+    }
 
-        class Null : Changer
-        {
-            public static Changer Instance { get; } = new Null();
-            public void Apply(ref bool hidden, ref string name) {}
-            public XElement Render(Context context, XElement source) => source;
-        }
+    class NullChanger : Changer
+    {
+        public static Changer Instance { get; } = new NullChanger();
+        public void Apply(ref bool? hidden, ref string name) {}
+        public XElement Render(Context context, XElement source) => source;
     }
 }

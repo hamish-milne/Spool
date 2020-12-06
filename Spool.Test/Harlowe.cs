@@ -225,6 +225,74 @@ I have 2 batteries and 4 bottles"
             {
 @"(set: $arr to (a: 2, 3, 5))(move: $arr's 2nd into $var)$var; (print: $arr)",
 @"3; [2, 5]"
+            },
+            new []
+            {
+@"(set: $name to ""Dracula"")
+(set: $p to (print: ""Count "" + $name))
+(set: $name to ""Alucard"")
+$p",
+@"
+
+
+Count Dracula"
+            },
+            new []
+            {
+@"(set: $legs to 8)(if: $legs is 8)[You're a spider!]",
+@"<div>You're a spider!</div>"
+            },
+            new []
+            {
+@"(set: $legs to 2)(unless: $legs is 8)[You're not a spider.]",
+@"<div>You're not a spider.</div>"
+            },
+            new []
+            {
+@"(set: $foundWand to true, $foundHat to true, $foundBeard to true)
+(set: $isAWizard to $foundWand and $foundHat and $foundBeard)
+$isAWizard[You wring out your beard with a quick twisting spell.]
+You step into the ruined library.
+$isAWizard[The familiar scent of stale parchment comforts you.]",
+@"
+
+<div>You wring out your beard with a quick twisting spell.</div>
+You step into the ruined library.
+<div>The familiar scent of stale parchment comforts you.</div>"
+            },
+//             new []
+//             {
+// @"(set: $size to big)Your stomach makes {
+// (if: $size is 'giant')[
+//     an intimidating rumble! You'll have to eat plenty of trees.
+// ](else-if: $size is 'big')[
+//     a loud growl. You're hungry for some shrubs.
+// ](else:​)[
+//     a faint gurgle. You hope to scavenge some leaves.
+// ]}.",
+// @"Your stomach makes a loud growl. You're hungry for some shrubs."
+//             },
+            new []
+            {
+@"(set: $married to false, $date to false)$married[You hope this warrior will someday find the sort of love you know.]
+(else-if: not $date)[You hope this warrior isn't doing anything this Sunday (because
+you've got overtime on Saturday.)]",
+@"
+<div>You hope this warrior isn't doing anything this Sunday (because
+you've got overtime on Saturday.)</div>"
+            },
+            new []
+            {
+@"(set: $isUtterlyEvil to true)
+$isUtterlyEvil[You suddenly grip their ankles and spread your warm smile into a searing smirk.]
+(else:)[In silence, you gently, reverently rub their soles.]
+(else:)[Before they can react, you unleash a typhoon of tickles!]
+(else:)[They sigh contentedly, filling your pious heart with joy.]",
+@"
+<div>You suddenly grip their ankles and spread your warm smile into a searing smirk.</div>
+
+<div>Before they can react, you unleash a typhoon of tickles!</div>
+"
             }
         };
     
@@ -242,6 +310,8 @@ I have 2 batteries and 4 bottles"
 // TODO: Heading
 // TODO: Collapsed whitespace
 // TODO: Escaped chars
+
+// TODO: Display (needs multiple passages)
 
 
         [Theory]

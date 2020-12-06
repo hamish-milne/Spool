@@ -27,6 +27,7 @@ namespace Spool.Harlowe
         public XDocument Screen { get; } = new XDocument();
         public XContainer Cursor { get; private set; }
         public CursorPos Position { get; private set; } = CursorPos.Child;
+        public bool? PreviousCondition { get; set; }
         public object MacroProvider { get; }
 
         public (XContainer, CursorPos) Push(XContainer cursor, CursorPos cursorPos)
@@ -40,6 +41,18 @@ namespace Spool.Harlowe
         {
             Cursor = state.Item1;
             Position = state.Item2;
+        }
+
+        // TODO: Clean this up a bit
+        public bool? NewCondition()
+        {
+            var state = PreviousCondition;
+            PreviousCondition = null;
+            return state;
+        }
+        public void PopCondition(bool? state)
+        {
+            PreviousCondition = state;
         }
 
         public XNode PreviousNode => Position switch {

@@ -78,7 +78,7 @@ namespace Spool.Harlowe
                 [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [CharSet(">)")] char hidden;
 
-                public void Apply(ref bool hidden, ref string name)
+                public void Apply(ref bool? hidden, ref string name)
                 {
                     if (name != null) {
                         throw new Exception("Hook already named");
@@ -99,7 +99,7 @@ namespace Spool.Harlowe
                 [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [Literal("|")] Unnamed _;
 
-                public void Apply(ref bool hidden, ref string name)
+                public void Apply(ref bool? hidden, ref string name)
                 {
                     if (name != null) {
                         throw new Exception("Hook already named");
@@ -151,19 +151,37 @@ namespace Spool.Harlowe
                 if (hook == null) {
                     changerExprs = changers.Take(changers.Count - 1);
                 }
-                changerObjs.AddRange(changerExprs.Select(x => (x.Evaluate(context) as Changer) ?? throw new Exception("Hook prefix must be a Changer")));
                 string name = null;
-                bool hidden = false;
+                bool? hidden = false;
+                changerObjs.AddRange(changerExprs.Select(x => {
+                    var val = x.Evaluate(context);
+                    if (val is Changer c) {
+                        return c;
+                    } else if (val is bool b) {
+                        hidden |= !b;
+                        return NullChanger.Instance;
+                    } else {
+                        throw new Exception("Hook prefix must be a Changer or Boolean");
+                    }
+                }));
                 foreach (var c in changerObjs) {
                     c.Apply(ref hidden, ref name);
                 }
-                XElement content;
+                if (hidden != null) {
+                    context.PreviousCondition = hidden;
+                }
+                XElement content = null;
                 if (hidden == true && !forceShow) {
-                    content = new XElement(XName.Get("hidden"));
-                    context.AddNode(content);
-                    context.Hidden.Add(content, new ShowHiddenHook(this));
+                    if (name != null)
+                    {
+                        content = new XElement(XName.Get("hidden"));
+                        context.AddNode(content);
+                        context.Hidden.Add(content, new ShowHiddenHook(this));
+                    }
                 } else if (hook != null) {
+                    var prevCond = context.NewCondition();
                     content = hook.body.Render(context);
+                    context.PopCondition(prevCond);
                     foreach (var c in changerObjs) {
                         content = c.Render(context, content);
                     }
