@@ -107,23 +107,22 @@ You put your _heldItem down and lift it for a snuggle.",
 Your beloved plushie, Felix, awaits you after a long work day.
 You put your pencil down and lift it for a snuggle."
             },
-            // TODO: Invert the Changer interface to remove the <div>s
             new [] {
 @"(set: $robotText to (font: ""Courier New""))(set: _assistantText to (text-colour: ""Red""))
 $robotText[Good golly! Your flesh... it's so soft!]
 _assistantText[Don't touch me, please! I'm ticklish.]",
 @"
-<font value=""Courier New""><div>Good golly! Your flesh... it's so soft!</div></font>
-<color value=""Red""><div>Don't touch me, please! I'm ticklish.</div></color>"
+<font value=""Courier New"">Good golly! Your flesh... it's so soft!</font>
+<color value=""Red"">Don't touch me, please! I'm ticklish.</color>"
             },
             new [] {
 @"(font: ""Courier New"")[This is a hook.
 
 As you can see, this has a macro instance in front of it.]
 This text is outside the hook.",
-@"<font value=""Courier New""><div>This is a hook.
+@"<font value=""Courier New"">This is a hook.
 
-As you can see, this has a macro instance in front of it.</div></font>
+As you can see, this has a macro instance in front of it.</font>
 This text is outside the hook."
             },
             new [] {
@@ -131,12 +130,12 @@ This text is outside the hook."
 $x[This text is in Skia.]
 $x[As is this text.]",
 @"
-<font value=""Skia""><div>This text is in Skia.</div></font>
-<font value=""Skia""><div>As is this text.</div></font>"
+<font value=""Skia"">This text is in Skia.</font>
+<font value=""Skia"">As is this text.</font>"
             },
             new [] {
 @"(set: $x to 2)(if: $x is 2)[This text is only displayed if $x is 2.]",
-@"<div>This text is only displayed if 2 is 2.</div>"
+@"This text is only displayed if 2 is 2."
             },
             new [] {
 @"[This hook is named 'opener']<opener|
@@ -240,12 +239,12 @@ Count Dracula"
             new []
             {
 @"(set: $legs to 8)(if: $legs is 8)[You're a spider!]",
-@"<div>You're a spider!</div>"
+@"You're a spider!"
             },
             new []
             {
 @"(set: $legs to 2)(unless: $legs is 8)[You're not a spider.]",
-@"<div>You're not a spider.</div>"
+@"You're not a spider."
             },
             new []
             {
@@ -256,9 +255,9 @@ You step into the ruined library.
 $isAWizard[The familiar scent of stale parchment comforts you.]",
 @"
 
-<div>You wring out your beard with a quick twisting spell.</div>
+You wring out your beard with a quick twisting spell.
 You step into the ruined library.
-<div>The familiar scent of stale parchment comforts you.</div>"
+The familiar scent of stale parchment comforts you."
             },
 //             new []
 //             {
@@ -278,8 +277,8 @@ You step into the ruined library.
 (else-if: not $date)[You hope this warrior isn't doing anything this Sunday (because
 you've got overtime on Saturday.)]",
 @"
-<div>You hope this warrior isn't doing anything this Sunday (because
-you've got overtime on Saturday.)</div>"
+You hope this warrior isn't doing anything this Sunday (because
+you've got overtime on Saturday.)"
             },
             new []
             {
@@ -289,11 +288,21 @@ $isUtterlyEvil[You suddenly grip their ankles and spread your warm smile into a 
 (else:)[Before they can react, you unleash a typhoon of tickles!]
 (else:)[They sigh contentedly, filling your pious heart with joy.]",
 @"
-<div>You suddenly grip their ankles and spread your warm smile into a searing smirk.</div>
+You suddenly grip their ankles and spread your warm smile into a searing smirk.
 
-<div>Before they can react, you unleash a typhoon of tickles!</div>
+Before they can react, you unleash a typhoon of tickles!
 "
-            }
+            },
+//             new []
+//             {
+// @"(for: each _item, sword, key, scroll) [You have the _item. ]",
+// @"You have the sword. You have the key. You have the scroll. "
+//             },
+//             new []
+//             {
+// @"(for: _ingredient where it contains ""petal"", 'apple', 'rose petal', 'orange', 'daisy petal') [Cook the _ingredient? ]",
+// @"Cook the rose petal? Cook the daisy petal? "
+//             }
         };
     
 // TODO: (if: (num:"5") > 2)

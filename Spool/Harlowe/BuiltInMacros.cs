@@ -17,7 +17,7 @@ namespace Spool.Harlowe
     public interface Changer
     {
         void Apply(ref bool? hidden, ref string name);
-        XElement Render(Context context, XElement source);
+        void Render(Context context, Action source);
     }
 
     struct VariableToValue
@@ -130,7 +130,7 @@ namespace Spool.Harlowe
         {
             public static Hidden Instance { get; } = new Hidden();
             public void Apply(ref bool? hidden, ref string name) => hidden = true;
-            public XElement Render(Context context, XElement source) => source;
+            public void Render(Context context, Action source) => source();
         }
 
 
@@ -176,14 +176,14 @@ namespace Spool.Harlowe
 
             public void Apply(ref bool? hidden, ref string name) {}
 
-            public XElement Render(Context context, XElement source)
+            public void Render(Context context, Action source)
             {
                 var el = new XElement(XName.Get("font"));
                 el.SetAttributeValue(XName.Get("value"), FontName);
-                source.Remove();
                 context.AddNode(el);
-                el.Add(source);
-                return el;
+                var state = context.Push(el, CursorPos.Child);
+                source();
+                context.Pop(state);
             }
         }
 
@@ -198,14 +198,14 @@ namespace Spool.Harlowe
 
             public void Apply(ref bool? hidden, ref string name) {}
 
-            public XElement Render(Context context, XElement source)
+            public void Render(Context context, Action source)
             {
                 var el = new XElement(XName.Get("color"));
                 el.SetAttributeValue(XName.Get("value"), Color);
-                source.Remove();
                 context.AddNode(el);
-                el.Add(source);
-                return el;
+                var state = context.Push(el, CursorPos.Child);
+                source();
+                context.Pop(state);
             }
         }
 
@@ -219,6 +219,6 @@ namespace Spool.Harlowe
     {
         public static Changer Instance { get; } = new NullChanger();
         public void Apply(ref bool? hidden, ref string name) {}
-        public XElement Render(Context context, XElement source) => source;
+        public void Render(Context context, Action source) => source();
     }
 }

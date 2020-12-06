@@ -89,7 +89,7 @@ namespace Spool.Harlowe
                     }
                 }
 
-                public XElement Render(Context context, XElement source) => source;
+                public void Render(Context context, Action source) => source();
             }
 
             [WhitespaceSeparated]
@@ -110,7 +110,7 @@ namespace Spool.Harlowe
                     }
                 }
 
-                public XElement Render(Context context, XElement source) => source;
+                public void Render(Context context, Action source) => source();
             }
 
             [Alternative(
@@ -179,12 +179,24 @@ namespace Spool.Harlowe
                         context.Hidden.Add(content, new ShowHiddenHook(this));
                     }
                 } else if (hook != null) {
-                    var prevCond = context.NewCondition();
-                    content = hook.body.Render(context);
-                    context.PopCondition(prevCond);
-                    foreach (var c in changerObjs) {
-                        content = c.Render(context, content);
-                    }
+                    changerObjs.Reverse();
+                    Action renderHookBody = () => {
+                        var prevCond = context.NewCondition();
+                        if (name != null) {
+                            content = new XElement(XName.Get("div"));
+                            context.AddNode(content);
+                            var state = context.Push(content, CursorPos.Child);
+                            hook.body.Render(context);
+                            context.Pop(state);
+                        } else {
+                            hook.body.Render(context);
+                        }
+                        context.PopCondition(prevCond);
+                    };
+                    var finalRenderFn = changerObjs.Aggregate(renderHookBody,
+                        (sourceFn, changer) => () => changer.Render(context, sourceFn)
+                    );
+                    finalRenderFn();
                 } else if (changerObjs.Count == 0) {
                     var macroResult = changers.Last().Evaluate(context);
                     if (macroResult is Renderable r) {
@@ -209,22 +221,18 @@ namespace Spool.Harlowe
             }
         }
 
-        abstract class ChangerTarget
-        {
-            public abstract XElement Render(Context context);
-        }
+        interface ChangerTarget : Renderable {}
 
         abstract class LinkBase : ChangerTarget
         {
             public abstract string Link { get; }
             public abstract string Text { get; }
 
-            public override XElement Render(Context context)
+            public void Render(Context context)
             {
                 var el = new XElement(XName.Get("link"), new XText(Text));
                 el.SetAttributeValue(XName.Get("href"), Link);
-                context.Cursor.Add(el);
-                return el;
+                context.AddNode(el);
             }
         }
 
@@ -264,16 +272,11 @@ namespace Spool.Harlowe
         {
             public abstract List<Renderable> GetContent();
 
-            public override XElement Render(Context context)
+            public void Render(Context context)
             {
-                var container = new XElement(XName.Get("div"));
-                context.Cursor.Add(container);
-                var state = context.Push(container, CursorPos.Child);
                 foreach (var c in GetContent()) {
                     c.Render(context);
                 }
-                context.Pop(state);
-                return container;
             }
         }
 
