@@ -321,7 +321,16 @@ lean"
             {
 @"(nth: visit, 'Hi!', 'Hello again!', ""Oh, it's you!"", 'Hey!')",
 @"Hi!"
-            }
+            },
+            new []
+            {
+@"|ghost>[Awoo]
+(enchant: ?ghost, (text-style:'outline'))
+|ghost>[Ooooh]",
+@"<outline><div name=""ghost"">Awoo</div></outline>
+
+<outline><div name=""ghost"">Ooooh</div></outline>"
+            },
         };
     
 // TODO: (if: (num:"5") > 2)

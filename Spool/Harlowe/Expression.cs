@@ -312,11 +312,7 @@ namespace Spool.Harlowe
                 } else if (value is Renderable rnd) {
                     rnd.Render(context);
                 } else {
-                    if (context.Cursor.LastNode is XText prevText) {
-                        prevText.Value += value;
-                    } else {
-                        context.Cursor.Add(new XText(value.ToString()));
-                    }
+                    context.AddText(value.ToString());
                 }
             }
         }
