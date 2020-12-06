@@ -123,7 +123,7 @@ namespace Spool.Harlowe
             public void Render(Context context) => DoPrint(context, Value);
         }
 
-        public Renderable display(string passage) => Context.Passages[passage];
+        public Renderable display(string passage) => Context.Passages[passage].Body;
 
         public Changer hidden() => Hidden.Instance;
         class Hidden : Changer
@@ -238,6 +238,27 @@ namespace Spool.Harlowe
                 }
             }
         }
+
+        public object either(params object[] choices) => choices[Context.Random.Next(choices.Length)];
+
+        public object cond(params object[] values)
+        {
+            for (int i = 1; i < (values.Length-1); i += 2) {
+                if ((bool)values[i - 1]) {
+                    return values[i];
+                }
+            }
+            return values[values.Length - 1];
+        }
+
+        public object nth(double number, params object[] values)
+        {
+            var idx = ((int)number) % values.Length;
+            return values[idx];
+        }
+
+        public IList range(double a, double b) =>
+            Enumerable.Range((int)a, ((int)b) - ((int)a) + 1).Select(x => (double)x).ToList();
     }
 
     class NullChanger : Changer

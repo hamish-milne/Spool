@@ -6,6 +6,14 @@ using System.Xml.Linq;
 
 namespace Spool.Harlowe
 {
+
+    public class Passage
+    {
+        public string Name { get; }
+        public Renderable Body { get; }
+        public int Visits { get; }
+    }
+
     public class Context
     {
         public Context()
@@ -23,12 +31,14 @@ namespace Spool.Harlowe
         public IDictionary<string, object> Locals { get; } = new Dictionary<string, object>();
         public IDictionary<string, object> Globals { get; } = new Dictionary<string, object>();
         public IDictionary<XContainer, Renderable> Hidden { get; } = new Dictionary<XContainer, Renderable>();
-        public IDictionary<string, Renderable> Passages { get; } = new Dictionary<string, Renderable>();
+        public Passage Passage { get; } = new Passage();
+        public IDictionary<string, Passage> Passages { get; } = new Dictionary<string, Passage>();
         public XDocument Screen { get; } = new XDocument();
         public XContainer Cursor { get; private set; }
         public CursorPos Position { get; private set; } = CursorPos.Child;
         public bool? PreviousCondition { get; set; }
         public object MacroProvider { get; }
+        public Random Random { get; } = new Random();
 
         public (XContainer, CursorPos) Push(XContainer cursor, CursorPos cursorPos)
         {

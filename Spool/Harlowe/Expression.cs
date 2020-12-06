@@ -188,14 +188,6 @@ namespace Spool.Harlowe
             public static bool Not(bool rhs) => !rhs;
         }
 
-        class Less : Operator
-        {
-            protected override string Op => "<";
-        }
-        class Greater : Operator
-        {
-            protected override string Op => ">";
-        }
         class LessOrEqual : Operator
         {
             protected override string Op => "<=";
@@ -203,6 +195,14 @@ namespace Spool.Harlowe
         class GreaterOrEqual : Operator
         {
             protected override string Op => ">=";
+        }
+        class Less : Operator
+        {
+            protected override string Op => "<";
+        }
+        class Greater : Operator
+        {
+            protected override string Op => ">";
         }
         class IsIn : Operator
         {
@@ -559,7 +559,14 @@ namespace Spool.Harlowe
         {
             [CharRange("az", "AZ", "09", "__", "--"), Repeat] public string Text { get; set; }
 
-            public object Evaluate(Context context) => Text;
+            public object Evaluate(Context context)
+            {
+                return Text switch {
+                    "visit" => context.Passage.Visits,
+                    "it" => throw new NotImplementedException(),
+                    _ => Text
+                };
+            }
         }
 
     }

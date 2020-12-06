@@ -302,7 +302,26 @@ Before they can react, you unleash a typhoon of tickles!
 //             {
 // @"(for: _ingredient where it contains ""petal"", 'apple', 'rose petal', 'orange', 'daisy petal') [Cook the _ingredient? ]",
 // @"Cook the rose petal? Cook the daisy petal? "
-//             }
+//             },
+            new []
+            {
+@"(for: each _i, ...(range:1,9))[_i]",
+@"123456789"
+            },
+            new []
+            {
+@"(set: $cash to 250)
+(set: $status to (cond: $cash >= 300, stable, $cash >= 200, lean, $cash >= 100, skint, broke))
+$status",
+@"
+
+lean"
+            },
+            new []
+            {
+@"(nth: visit, 'Hi!', 'Hello again!', ""Oh, it's you!"", 'Hey!')",
+@"Hi!"
+            }
         };
     
 // TODO: (if: (num:"5") > 2)
@@ -322,12 +341,14 @@ Before they can react, you unleash a typhoon of tickles!
 
 // TODO: Display (needs multiple passages)
 
+// TODO: RNG check
+
 
         [Theory]
         [MemberData(nameof(ExampleMarkup))]
         public void StaticMarkup(string input, string expected)
         {
-            var passage = Lexico.Lexico.Parse<Passage>(input, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true});
+            var passage = Lexico.Lexico.Parse<Block>(input, new Lexico.Test.XunitTrace(_outputHelper){Verbose = true});
             var context = new Context();
             passage.Render(context);
             var actual = ((XContainer)context.Screen.FirstNode).FirstNode.ToString(SaveOptions.DisableFormatting);

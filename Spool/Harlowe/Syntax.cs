@@ -8,7 +8,7 @@ using Lexico;
 namespace Spool.Harlowe
 {
     [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]
-    public class Passage : Renderable
+    public class Block : Renderable
     {
 
         [Term] private ContentList content;
@@ -178,41 +178,60 @@ namespace Spool.Harlowe
                         context.AddNode(content);
                         context.Hidden.Add(content, new ShowHiddenHook(this));
                     }
-                } else if (hook != null) {
-                    changerObjs.Reverse();
-                    Action renderHookBody = () => {
+                } else {
+                    Action renderHookBody;
+
+                    // If applied to a hook, render its body:
+                    if (hook != null)
+                    {
+                        renderHookBody = () => hook.body.Render(context);
+                    }
+                    else
+                    {
+                        // Otherwise, render the content of the final macro/variable:
+                        var macroResult = changers.Last().Evaluate(context);
+                        if (macroResult is Renderable r) {
+                            renderHookBody = () => r.Render(context);
+                        } else if (macroResult is string || macroResult is double) {
+                            renderHookBody = () => context.AddText(macroResult.ToString());
+                        } else if (macroResult is Command cmd) {
+                            if (changerObjs.Count > 0) {
+                                throw new Exception("Changers cannot be applied to Commands");
+                            }
+                            cmd.Run(context);
+                            return;
+                        } else if (macroResult == null) {
+                            if (changerObjs.Count > 0) {
+                                throw new Exception("Changers cannot be applied to Instants");
+                            }
+                            // 'Instant' e.g. Set, Put
+                            return;
+                        } else {
+                            throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
+                        }
+                    }
+
+                    // Push a new state, and add the name tag to the inner content
+                    Action initialRenderFn = () => {
                         var prevCond = context.NewCondition();
                         if (name != null) {
                             content = new XElement(XName.Get("div"));
                             context.AddNode(content);
                             var state = context.Push(content, CursorPos.Child);
-                            hook.body.Render(context);
+                            renderHookBody();
                             context.Pop(state);
                         } else {
-                            hook.body.Render(context);
+                            renderHookBody();
                         }
                         context.PopCondition(prevCond);
                     };
-                    var finalRenderFn = changerObjs.Aggregate(renderHookBody,
+
+                    // Apply changers in reverse order:
+                    changerObjs.Reverse();
+                    var finalRenderFn = changerObjs.Aggregate(initialRenderFn,
                         (sourceFn, changer) => () => changer.Render(context, sourceFn)
                     );
                     finalRenderFn();
-                } else if (changerObjs.Count == 0) {
-                    var macroResult = changers.Last().Evaluate(context);
-                    if (macroResult is Renderable r) {
-                        r.Render(context);
-                    } else if (macroResult is string || macroResult is double) {
-                        context.AddText(macroResult.ToString());
-                    } else if (macroResult is Command cmd) {
-                        cmd.Run(context);
-                    } else if (macroResult == null) {
-                        // 'Instant' e.g. Set, Put
-                    } else {
-                        throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
-                    }
-                    return;
-                } else {
-                    throw new NotImplementedException();
                 }
                 // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
                 if (name != null) {
