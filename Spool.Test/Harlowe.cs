@@ -293,11 +293,11 @@ You suddenly grip their ankles and spread your warm smile into a searing smirk.
 Before they can react, you unleash a typhoon of tickles!
 "
             },
-//             new []
-//             {
-// @"(for: each _item, sword, key, scroll) [You have the _item. ]",
-// @"You have the sword. You have the key. You have the scroll. "
-//             },
+            new []
+            {
+@"(for: each _item, sword, key, scroll) [You have the _item. ]",
+@"You have the sword. You have the key. You have the scroll. "
+            },
 //             new []
 //             {
 // @"(for: _ingredient where it contains ""petal"", 'apple', 'rose petal', 'orange', 'daisy petal') [Cook the _ingredient? ]",

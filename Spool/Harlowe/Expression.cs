@@ -22,15 +22,52 @@ namespace Spool.Harlowe
         void Delete(Context context);
     }
 
+    delegate bool Filter(object value);
+
     static class Expressions
     {
+        // Marker interface for expressions that can be a part of operators etc.
+        // This makes sure the parser doesn't try to parse `each $foo + 1` as `(each $foo) + 1` etc.
+        interface SubExpression : Expression {}
+        interface TopExpression : Expression {}
 
         [WhitespaceSeparated]
-        class ToExpression : Expression
+        class Each : TopExpression
         {
-            [Term] public Expression Variable;
+            [Literal("each")] Unnamed _;
+            [Term] Variable variable;
+
+            public object Evaluate(Context context)
+            {
+                return new Filter(value => {
+                    variable.Set(context, value);
+                    return true;
+                });
+            }
+        }
+
+        [WhitespaceSeparated]
+        class Where : TopExpression
+        {
+            [Term] Variable variable;
+            [Literal("where")] Unnamed _;
+            [Term] SubExpression expression;
+
+            public object Evaluate(Context context)
+            {
+                return new Filter(value => {
+                    variable.Set(context, value);
+                    return (bool)expression.Evaluate(context);
+                });
+            }
+        }
+
+        [WhitespaceSeparated]
+        class To : TopExpression
+        {
+            [Term] SubExpression Variable;
             [Literal("to")] Unnamed _;
-            [Term] public Expression Value;
+            [Term] SubExpression Value;
 
             public object Evaluate(Context context) {
                 var m = Variable as Mutable;
@@ -46,11 +83,11 @@ namespace Spool.Harlowe
         }
 
         [WhitespaceSeparated]
-        class IntoExpression : Expression
+        class Into : TopExpression
         {
-            [Term] public Expression Value;
+            [Term] SubExpression Value;
             [Literal("into")] Unnamed _;
-            [Term] public Expression Variable;
+            [Term] SubExpression Variable;
 
             public object Evaluate(Context context) {
                 var m = Variable as Mutable;
@@ -67,12 +104,13 @@ namespace Spool.Harlowe
         }
 
 
+
         // TODO: Fix this so that order of operations is respected
-        class SimpleOperatorExpr : Expression
+        class SimpleOperatorExpr : SubExpression
         {
-            [Term] protected Expression LHS;
+            [Term] protected SubExpression LHS;
             [WhitespaceSurrounded] protected Operator Operator;
-            [Term] protected Expression RHS;
+            [Term] protected SubExpression RHS;
 
             public object Evaluate(Context context)
             {
@@ -81,10 +119,10 @@ namespace Spool.Harlowe
                 return Operator.Evaluate(context);
             }
         }
-        class SimpleUnaryExpr : Expression
+        class SimpleUnaryExpr : SubExpression
         {
             [WhitespaceSurrounded] protected Unary Operator;
-            [Term] protected Expression RHS;
+            [Term] protected SubExpression RHS;
 
             public object Evaluate(Context context)
             {
@@ -250,15 +288,15 @@ namespace Spool.Harlowe
         }
 
         [WhitespaceSeparated, SurroundBy("(", ")")]
-        class Parenthesized : Expression
+        class Parenthesized : SubExpression
         {
             [Pass, Cut] Unnamed _;
-            [Term] Expression inner;
+            [Term] SubExpression inner;
 
             public object Evaluate(Context context) => inner.Evaluate(context);
         }
 
-        public abstract class ObjectExpression : Renderable, Expression
+        public abstract class ObjectExpression : Renderable, SubExpression
         {
             public abstract object Evaluate(Context context);
 
@@ -284,9 +322,9 @@ namespace Spool.Harlowe
         }
 
         [WhitespaceSeparated]
-        class MemberAccess : Mutable
+        class MemberAccess : Mutable, SubExpression
         {
-            [Suffix("'s")] public Expression Object { get; set; }
+            [Suffix("'s")] public SubExpression Object { get; set; }
             [Alternative(
                 typeof(Macro),
                 typeof(Parenthesized),
@@ -296,7 +334,7 @@ namespace Spool.Harlowe
                 typeof(QuotedString),
                 typeof(SingleQuotedString),
                 typeof(BareString)
-            )] public Expression Member { get; set; }
+            )] public SubExpression Member { get; set; }
 
             public object Evaluate(Context context)
             {
@@ -369,7 +407,7 @@ namespace Spool.Harlowe
             public void Delete(Context context) => (Global ? context.Globals : context.Locals).Remove(Name);
         }
 
-        class Integer : Expression
+        class Integer : SubExpression
         {
             [CharRange("09"), Repeat] string number;
             [Optional, Regex("st|nd|rd|th")] Unnamed _;
@@ -377,14 +415,14 @@ namespace Spool.Harlowe
             public object Evaluate(Context context) => (double)int.Parse(number);
         }
 
-        class Float : Expression
+        class Float : SubExpression
         {
             [Term] double number;
 
             public object Evaluate(Context context) => number;
         }
 
-        class HookRef : Expression
+        class HookRef : SubExpression
         {
             [Literal("?")] Unnamed _;
             [CharRange("az", "AZ", "09", "__"), Repeat] public string Name;
@@ -430,7 +468,7 @@ namespace Spool.Harlowe
             public struct Argument
             {
                 [Optional, Literal("...")] public string spread;
-                [Term] public Expression value;
+                [Alternative(typeof(TopExpression), typeof(SubExpression))] public Expression value;
             }
 
             [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
@@ -487,14 +525,14 @@ namespace Spool.Harlowe
             }
         }
 
-        class False : Expression
+        class False : SubExpression
         {
             [Literal("false")] Unnamed _;
 
             public object Evaluate(Context context) => false;
         }
 
-        class True : Expression
+        class True : SubExpression
         {
             [Literal("true")] Unnamed _;
 
@@ -502,7 +540,7 @@ namespace Spool.Harlowe
         }
 
         [SurroundBy("\"")]
-        class QuotedString : Expression
+        class QuotedString : SubExpression
         {
             [Regex(@"[^""]*")] public string Text { get; set; }
 
@@ -510,14 +548,14 @@ namespace Spool.Harlowe
         }
 
         [SurroundBy("'")]
-        class SingleQuotedString : Expression
+        class SingleQuotedString : SubExpression
         {
             [Regex(@"[^']*")] public string Text { get; set; }
 
             public object Evaluate(Context context) => Text;
         }
 
-        class BareString : Expression
+        class BareString : SubExpression
         {
             [CharRange("az", "AZ", "09", "__", "--"), Repeat] public string Text { get; set; }
 

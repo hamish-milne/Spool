@@ -213,6 +213,31 @@ namespace Spool.Harlowe
         public Changer unless(bool condition) => condition ? Hidden.Instance : NullChanger.Instance;
         public Changer elseIf(bool condition) => (condition && Context.PreviousCondition == true) ? NullChanger.Instance : Hidden.Instance;
         public Changer @else() => elseIf(true);
+
+        public Changer @for(Filter filter, params object[] values) => new Loop(filter, values);
+
+        class Loop : Changer
+        {
+            private readonly Filter filter;
+            private readonly object[] values;
+
+            public Loop(Filter filter, object[] values)
+            {
+                this.filter = filter;
+                this.values = values;
+            }
+
+            public void Apply(ref bool? hidden, ref string name) {}
+
+            public void Render(Context context, Action source)
+            {
+                foreach (var v in values) {
+                    if (filter(v)) {
+                        source();
+                    }
+                }
+            }
+        }
     }
 
     class NullChanger : Changer
