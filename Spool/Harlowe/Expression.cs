@@ -1,5 +1,6 @@
 
 
+using System.Drawing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using Lexico;
 namespace Spool.Harlowe
 {
 
-    interface Expression
+    public interface Expression
     {
         object Evaluate(Context context);
     }
@@ -24,12 +25,26 @@ namespace Spool.Harlowe
 
     delegate bool Filter(object value);
 
-    static class Expressions
+    public static class Expressions
     {
         // Marker interface for expressions that can be a part of operators etc.
         // This makes sure the parser doesn't try to parse `each $foo + 1` as `(each $foo) + 1` etc.
         interface SubExpression : Expression {}
         interface TopExpression : Expression {}
+
+        public static Expression Parse(string input, ITrace trace = null)
+            => Lexico.Lexico.Parse<TopLevelExpression>(input, trace);
+
+        [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]   
+        class TopLevelExpression : Expression
+        {
+            [Alternative(typeof(TopExpression), typeof(SubExpression))] private Expression expression;
+
+            public object Evaluate(Context context)
+            {
+                return expression.Evaluate(context);
+            }
+        }
 
         [WhitespaceSeparated]
         class Each : TopExpression
@@ -342,9 +357,27 @@ namespace Spool.Harlowe
                 case IList array:
                     switch (member) {
                         case "length":
-                            return array.Count;
+                            return (double)array.Count;
                         case double idx:
                             return array[(int)idx - 1];
+                    }
+                    break;
+                case Color color:
+                    return member switch {
+                        "r" => (double)color.R,
+                        "g" => (double)color.G,
+                        "b" => (double)color.B,
+                        "h" => (double)color.GetHue(),
+                        "s" => (double)color.GetSaturation(),
+                        "l" => (double)color.GetBrightness(),
+                        _ => throw new Exception("Member not found")
+                    };
+                case string str:
+                    switch (member) {
+                        case "length":
+                            return (double)str.Length;
+                        case double idx:
+                            return str[(int)idx - 1].ToString();
                     }
                     break;
                 }
@@ -406,7 +439,7 @@ namespace Spool.Harlowe
         class Integer : SubExpression
         {
             [CharRange("09"), Repeat] string number;
-            [Optional, Regex("st|nd|rd|th")] Unnamed _;
+            [Regex("st|nd|rd|th")] Unnamed _;
 
             public object Evaluate(Context context) => (double)int.Parse(number);
         }
@@ -511,8 +544,8 @@ namespace Spool.Harlowe
                             mArgs = args.Take(parameters.Length - 1).Append(pArray).ToArray();
                         }
                         return m.Invoke(context.MacroProvider, mArgs);
-                    } catch (TargetInvocationException e) {
-                        throw e.InnerException;
+                    } catch (TargetInvocationException) {
+                        throw;
                     } catch {
                         continue;
                     }
@@ -557,11 +590,29 @@ namespace Spool.Harlowe
 
             public object Evaluate(Context context)
             {
-                return Text switch {
-                    "visit" => context.Passage.Visits,
-                    "it" => throw new NotImplementedException(),
-                    _ => Text
-                };
+                unchecked {
+                    return Text switch {
+                        "visit" => context.Passage.Visits,
+                        "it" => throw new NotImplementedException(),
+                        "red" => Color.FromArgb((int)0xffe61919),
+                        "orange" => Color.FromArgb((int)0xffe68019),
+                        "yellow" => Color.FromArgb((int)0xffe5e619),
+                        "lime" => Color.FromArgb((int)0xff80e619),
+                        "green" => Color.FromArgb((int)0xff19e619),
+                        "aqua" => Color.FromArgb((int)0xff19e5e6),
+                        "cyan" => Color.FromArgb((int)0xff19e5e6),
+                        "blue" => Color.FromArgb((int)0xff197fe6),
+                        "navy" => Color.FromArgb((int)0xff1919e6),
+                        "purple" => Color.FromArgb((int)0xff7f19e6),
+                        "magenta" => Color.FromArgb((int)0xffe619e5),
+                        "fuchsia" => Color.FromArgb((int)0xffe619e5),
+                        "white" => Color.FromArgb((int)0xffffffff),
+                        "black" => Color.FromArgb((int)0xff000000),
+                        "gray" => Color.FromArgb((int)0xff888888),
+                        "grey" => Color.FromArgb((int)0xff888888),
+                        _ => Text
+                    };
+                }
             }
         }
 

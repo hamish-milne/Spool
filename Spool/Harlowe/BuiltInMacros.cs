@@ -1,5 +1,6 @@
 
 
+using System.Drawing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -257,8 +258,188 @@ namespace Spool.Harlowe
             return values[idx];
         }
 
-        public IList range(double a, double b) =>
-            Enumerable.Range((int)a, ((int)b) - ((int)a) + 1).Select(x => (double)x).ToList();
+        public IList range(double a, double b) => b < a ? range(b, a) :
+            Enumerable.Range((int)a, ((int)b) - ((int)a) + 1).Select(x => (object)(double)x).ToList();
+
+        public Gradient gradient(double angle, params object[] pairs)
+        {
+            IEnumerable<ColorStop> getStops() {
+                for (int i = 0; i < pairs.Length; i += 2) {
+                    if (pairs[i] is double d && pairs[i+1] is Color c) {
+                        yield return new ColorStop(c, d);
+                    } else {
+                        throw new ArgumentException($"Invalid color stop at {i}");
+                    }
+                }
+            }
+            return new Gradient(getStops(), angle);
+        }
+
+        public Color hsl(double hue, double saturation, double lightness) => hsla(hue, saturation, lightness);
+        public Color hsl(double hue, double saturation, double lightness, double alpha) => hsla(hue, saturation, lightness, alpha);
+        public Color hsla(double hue, double saturation, double lightness) => hsl(hue, saturation, lightness, 1.0);
+        public Color hsla(double hue, double saturation, double lightness, double alpha)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Color rgba(double r, double g, double b, double a) => Color.FromArgb((int)a, (int)r, (int)g, (int)b);
+        public Color rgba(double r, double g, double b) => rgba(r, g, b, 255);
+        public Color rgb(double r, double g, double b, double a) => rgba(r, g, b, a);
+        public Color rgb(double r, double g, double b) => rgba(r, g, b);
+
+
+        public bool AllPass(Filter filter, params object[] values) => values.All(new Func<object, bool>(filter));
+        public bool SomePass(Filter filter, params object[] values) => values.Any(new Func<object, bool>(filter));
+        public bool NonePass(Filter filter, params object[] values) => values.All(x => !filter(x));
+
+        // TODO: altered
+        public double count(IList array, params object[] testValues) => array.Cast<object>().Count(x => System.Array.IndexOf(testValues, x) >= 0);
+        public double count(string text, params string[] testValues) => testValues.Sum(value => {
+            int count = 0, minIndex = text.IndexOf(value, 0);
+            while (minIndex != -1)
+            {
+                minIndex = text.IndexOf(value, minIndex + value.Length);
+                count++;
+            }
+            return count;
+        });
+
+        public IList DataPairs(IDictionary map) => DataEntries(map);
+        public IList DataEntries(IDictionary map) {
+            IEnumerable<object> makeEntries() {
+                var e = map.GetEnumerator();
+                while (e.MoveNext()) {
+                    yield return new Dictionary<object, object>{{"name", e.Key}, {"value", e.Value}};
+                }
+            };
+            return makeEntries().ToList();
+        }
+
+        // TODO: Ordering
+        public IList DataNames(IDictionary map) => map.Keys.Cast<object>().ToList();
+        public IList DataValues(IDictionary map) => map.Values.Cast<object>().ToList();
+
+        public IList find(Filter filter, params object[] values) => values.Where(new Func<object, bool>(filter)).ToList();
+        // TODO: Folded
+        public IList interlaced(params IList[] lists) => Enumerable.Range(0, lists.Min(x => x.Count))
+            .SelectMany(i => lists.Select(l => l[i])).ToList();
+        public IList repeated(double count, params object[] values) =>
+            Enumerable.Range(0, (int)count).SelectMany(_ => values).ToList();
+        public IList reversed(params object[] values) => values.Reverse().ToList();
+
+        static int mod(int a, int b)
+        {
+            var c = a % b;
+            return c*b < 0 ? c+b : c;
+        }
+
+        public IList rotated(double rotation, params object[] values) =>
+            Enumerable.Range(-(int)rotation, values.Length).Select(i => values[mod(i, values.Length)]).ToList();
+        public IList shuffled(params object[] list)
+        {
+            int n = list.Length;  
+            while (n > 1) {  
+                n--;  
+                int k = Context.Random.Next(n + 1);  
+                var value = list[k];  
+                list[k] = list[n];  
+                list[n] = value;  
+            }
+            return list.ToList();
+        }
+        public IList sorted(params IComparable[] list)
+        {
+            var newList = list.ToList();
+            newList.Sort();
+            return newList;
+        }
+
+        public string CurrentDate() => DateTime.Now.ToString("ddd MMM dd yyyy");
+        public string CurrentTime() => DateTime.Now.ToString("hh:mm tt");
+        public double MonthDay() => DateTime.Now.Day;
+        public string WeekDay() => DateTime.Now.DayOfWeek.ToString();
+        
+        // TODO: History
+        // TODO: Passage
+        // TODO: Value semantics!! AAAAARGGH!
+
+        // TODO: Bind, cycling-link
+        // TODO: Bind, dropdown
+
+        public Changer link(string text) => linkReplace(text);
+        public Changer linkReplace(string text) => new LinkReplace(text);
+
+        class LinkReplace : Changer
+        {
+            public LinkReplace(string text)
+            {
+                Text = text;
+            }
+
+            public string Text { get; }
+
+            public void Apply(ref bool? hidden, ref string name) => hidden = true;
+
+            public void Render(Context context, Action source)
+            {
+                var el = new XElement(XName.Get("link"));
+                el.SetAttributeValue(XName.Get("href"), "something here"); // TODO: Clicks
+                context.AddNode(el);
+                var state = context.Push(el, CursorPos.Child);
+                source();
+                context.Pop(state);
+            }
+        }
+
+        public Changer linkReveal(string text) => new LinkReveal(text);
+
+        class LinkReveal : Changer
+        {
+            public LinkReveal(string text)
+            {
+                Text = text;
+            }
+
+            public string Text { get; }
+
+            public void Apply(ref bool? hidden, ref string name) => hidden = true;
+
+            public void Render(Context context, Action source)
+            {
+                var el = new XElement(XName.Get("link"));
+                el.SetAttributeValue(XName.Get("href"), "something here"); // TODO: Clicks
+                context.AddNode(el);
+                var state = context.Push(el, CursorPos.Child);
+                source();
+                context.Pop(state);
+            }
+        }
+        
+    }
+
+    class Gradient
+    {
+        public double Angle { get; }
+        public IEnumerable<ColorStop> Stops { get; }
+
+        public Gradient(IEnumerable<ColorStop> stops, double angle)
+        {
+            Stops = stops;
+            Angle = angle;
+        }
+    }
+
+    struct ColorStop
+    {
+        public ColorStop(Color color, double stop)
+        {
+            Color = color;
+            Stop = stop;
+        }
+
+        public Color Color { get; }
+        public double Stop { get; }
     }
 
     class NullChanger : Changer

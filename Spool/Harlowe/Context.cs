@@ -34,7 +34,7 @@ namespace Spool.Harlowe
         public Passage Passage { get; } = new Passage();
         public IDictionary<string, Passage> Passages { get; } = new Dictionary<string, Passage>();
         public XDocument Screen { get; } = new XDocument();
-        public XContainer Cursor { get; private set; }
+        private XContainer Cursor { get; set; }
         public CursorPos Position { get; private set; } = CursorPos.Child;
         public bool? PreviousCondition { get; set; }
         public object MacroProvider { get; }
@@ -65,7 +65,7 @@ namespace Spool.Harlowe
             PreviousCondition = state;
         }
 
-        public XNode PreviousNode => Position switch {
+        private XNode PreviousNode => Position switch {
             CursorPos.Child => Cursor.LastNode,
             CursorPos.Before => Cursor.PreviousNode,
             _ => throw new ArgumentOutOfRangeException()
