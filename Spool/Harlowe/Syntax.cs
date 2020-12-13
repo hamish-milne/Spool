@@ -325,7 +325,7 @@ namespace Spool.Harlowe
 
         abstract class Style<T> : Style where T : Style, new()
         {
-            protected struct Item<T> where T : Style, new() {
+            protected struct Item {
 
                 private string Op => new T().Op;
 
@@ -342,7 +342,7 @@ namespace Spool.Harlowe
             }
 
             [IndirectLiteral(nameof(Op))] protected Unnamed prefix;
-            [Term] protected List<Item<T>> inner;
+            [Term] protected List<Item> inner;
             [IndirectLiteral(nameof(Op))] protected Unnamed suffix;
 
             protected abstract XName Tag { get; }
