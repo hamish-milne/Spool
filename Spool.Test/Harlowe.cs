@@ -298,11 +298,11 @@ Before they can react, you unleash a typhoon of tickles!
 @"(for: each _item, 'sword', 'key', 'scroll') [You have the _item. ]",
 @"You have the sword. You have the key. You have the scroll. "
             },
-//             new []
-//             {
-// @"(for: _ingredient where it contains ""petal"", 'apple', 'rose petal', 'orange', 'daisy petal') [Cook the _ingredient? ]",
-// @"Cook the rose petal? Cook the daisy petal? "
-//             },
+            new []
+            {
+@"(for: _ingredient where it contains ""petal"", 'apple', 'rose petal', 'orange', 'daisy petal') [Cook the _ingredient? ]",
+@"Cook the rose petal? Cook the daisy petal? "
+            },
             new []
             {
 @"(for: each _i, ...(range:1,9))[_i]",
@@ -385,7 +385,7 @@ lean"
             new []{"(datanames: (dm:'B','Y', 'A','X'))", "(a: 'A','B')"},
             new []{"(datavalues: (dm:'B',24, 'A',25))", "(a: 25,24)"},
             new []{"(find: _item where _item's 1st is 'A', 'Thorn', 'Apple', 'Cryptid', 'Anchor')", "(a: 'Apple', 'Anchor')"},
-            // new []{"(find: _num where (_num >= 12) and (it % 2 is 0), 9, 10, 11, 12, 13, 14, 15, 16)", "(a: 12, 14, 16)"},
+            new []{"(find: _num where (_num >= 12) and (it % 2 is 0), 9, 10, 11, 12, 13, 14, 15, 16)", "(a: 12, 14, 16)"},
             new []{"(interlaced: (a: 'A', 'B', 'C', 'D'), (a: 1, 2, 3))", "(a: 'A',1,'B',2,'C',3)"},
             new []{"(range:1,14)", "(a:1,2,3,4,5,6,7,8,9,10,11,12,13,14)"},
             new []{"(range:2,-2)", "(a:-2,-1,0,1,2)"},

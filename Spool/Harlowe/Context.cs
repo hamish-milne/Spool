@@ -106,6 +106,8 @@ namespace Spool.Harlowe
                 }
             }
         }
+
+        public Expression It { get; set; }
     }
 
     public enum CursorPos

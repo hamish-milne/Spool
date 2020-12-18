@@ -98,6 +98,7 @@ namespace Spool.Harlowe
                     Operator.Subtract => new Number(Value - num.Value),
                     Operator.Multiply => new Number(Value * num.Value),
                     Operator.Divide => new Number(Value / num.Value),
+                    Operator.Modulo => new Number(Value % num.Value),
                     _ => throw new NotSupportedException()
                 },
                 _ => base.Operate(op, rhs)
@@ -205,6 +206,14 @@ namespace Spool.Harlowe
                 },
                 _ => base.Operate(op, rhs)
             };
+        }
+
+        public override bool Test(TestOperator op, Data rhs)
+        {
+            if (op == TestOperator.Contains && rhs is String str) {
+                return Value.Contains(str.Value);
+            }
+            return base.Test(op, rhs);
         }
 
         private Func<Data, bool> Check(Func<string, char, bool> checker)

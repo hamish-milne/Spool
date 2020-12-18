@@ -42,36 +42,36 @@ namespace Spool.Harlowe
             }
         }
 
-        [WhitespaceSeparated]
-        class Each : TopExpression
-        {
-            [Literal("each")] Unnamed _;
-            [Term] Variable variable;
+        // [WhitespaceSeparated]
+        // class Each : TopExpression
+        // {
+        //     [Literal("each")] Unnamed _;
+        //     [Term] Variable variable;
 
-            public Data Evaluate(Context context)
-            {
-                return new LambdaData(value => {
-                    variable.Set(context, value);
-                    return true;
-                });
-            }
-        }
+        //     public Data Evaluate(Context context)
+        //     {
+        //         return new LambdaData(value => {
+        //             variable.Set(context, value);
+        //             return true;
+        //         });
+        //     }
+        // }
 
-        [WhitespaceSeparated]
-        class Where : TopExpression
-        {
-            [Term] Variable variable;
-            [Literal("where")] Unnamed _;
-            [Term] OperatorSequence expression;
+        // [WhitespaceSeparated]
+        // class Where : TopExpression
+        // {
+        //     [Term] Variable variable;
+        //     [Literal("where")] Unnamed _;
+        //     [Term] OperatorSequence expression;
 
-            public Data Evaluate(Context context)
-            {
-                return new LambdaData(value => {
-                    variable.Set(context, value);
-                    return ((Boolean)expression.Evaluate(context)).Value;
-                });
-            }
-        }
+        //     public Data Evaluate(Context context)
+        //     {
+        //         return new LambdaData(value => {
+        //             variable.Set(context, value);
+        //             return ((Boolean)expression.Evaluate(context)).Value;
+        //         });
+        //     }
+        // }
 
         [WhitespaceSeparated]
         class ToOrInto : TopExpression
@@ -84,12 +84,12 @@ namespace Spool.Harlowe
                 var swap = separator == "into";
                 var Variable = swap ? RHS : LHS;
                 var Value = swap ? LHS : RHS;
-                var m = Variable.Inner as Mutable;
+                var m = Variable.Build(context) as Mutable;
                 if (m == null) {
                     throw new Exception("Value not mutable");
                 }
                 var v = Value.Evaluate(context);
-                return new VariableToValue(m, Value.Evaluate(context), swap, Value.Inner as Mutable);
+                return new VariableToValue(m, Value.Evaluate(context), swap, Value.Build(context) as Mutable);
             }
         }
 
@@ -160,12 +160,29 @@ namespace Spool.Harlowe
 
             private Expression cachedExpr;
 
-            private Expression Build()
+            public Expression Build(Context context)
             {
+                if (cachedExpr != null) {
+                    return cachedExpr;
+                }
                 var list = new object[]{unaryFirst, expressionFirst}
                     .Concat(tokens.SelectMany(x => x.Tokens()))
                     .Where(x => x != null)
                     .ToList();
+                if (expressionFirst is Variable) {
+                    context.It = expressionFirst;
+                }
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] is It) {
+                        var prev = list.Take(i).OfType<Variable>().LastOrDefault() ?? context.It;
+                        if (prev == null) {
+                            throw new Exception("'it' used as leftmost expression");
+                        }
+                        list[i] = prev;
+                        context.It = prev;
+                    }
+                }
                 foreach (var u in list.OfType<UnaryOperator>().Reverse().ToList()) {
                     var idx = list.IndexOf(u);
                     var operand = (idx+1) < list.Count ? (list[idx+1] as Expression) : null;
@@ -192,14 +209,13 @@ namespace Spool.Harlowe
                 if (list.Count != 1) {
                     throw new Exception($"Expected an operator between {list[0]} and {list[1]}");
                 }
-                return (Expression)list[0];
+                cachedExpr = (Expression)list[0];
+                return cachedExpr;
             }
-
-            public Expression Inner => cachedExpr ??= Build();
 
             public Data Evaluate(Context context)
             {
-                return Inner.Evaluate(context);
+                return Build(context).Evaluate(context);
             }
         }
 
@@ -353,7 +369,45 @@ namespace Spool.Harlowe
             protected override string OpString => "'s";
         }
 
+        class Where : BinaryOperator
+        {
+            public override int Order => 100;
+            protected override string OpString => "where";
+
+            public override Expression Build(Expression lhs, Expression rhs)
+            {
+                if (lhs is Variable variable) {
+                    return new OperatorExpression(context =>
+                        new LambdaData(value => {
+                            variable.Set(context, value);
+                            return ((Boolean)rhs.Evaluate(context)).Value;
+                        })
+                    );
+                } else {
+                    throw new Exception("'where' must have a variable on the left");
+                }
+            }
+        }
+
         // TODO: Unary operator ordering
+
+        class Each : UnaryOperator
+        {
+            protected override string OpString => "each";
+            public override UnaryOp OpCode => throw new NotSupportedException();
+            public override Expression Build(Expression rhs)
+            {
+                if (rhs is Variable variable) {
+                    return new OperatorExpression(context => new LambdaData(value => {
+                        variable.Set(context, value);
+                        return true;
+                    }));
+                } else {
+                    throw new Exception("'each' must be applied to a Variable");
+                }
+            }
+        }
+
         class Not : UnaryOperator
         {
             protected override string OpString => "not";
@@ -565,6 +619,14 @@ namespace Spool.Harlowe
             }
         }
 
+        class It : SubExpression
+        {
+            [Literal("it")] Unnamed _;
+
+            public Data Evaluate(Context context)
+                => throw new InvalidOperationException("Tried to use 'it' outside of a sequence of operations");
+        }
+
         class False : SubExpression
         {
             [Literal("false")] Unnamed _;
@@ -624,7 +686,6 @@ namespace Spool.Harlowe
                 unchecked {
                     return Text switch {
                         "visit" => new Number(context.Passage.Visits),
-                        "it" => throw new NotImplementedException(),
                         _ => colors.TryGetValue(Text, out var c)
                             ? new Color(System.Drawing.Color.FromArgb((int)c))
                             : throw new Exception($"{Text} not defined")
