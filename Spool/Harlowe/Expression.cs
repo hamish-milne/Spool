@@ -1,12 +1,7 @@
-
-
-using System.Drawing;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Xml.Linq;
 using Lexico;
 
 namespace Spool.Harlowe
@@ -14,16 +9,16 @@ namespace Spool.Harlowe
 
     public interface Expression
     {
-        object Evaluate(Context context);
+        Data Evaluate(Context context);
     }
 
-    interface Mutable : Expression
+    public interface Mutable : Expression
     {
-        void Set(Context context, object value);
+        void Set(Context context, Data value);
         void Delete(Context context);
     }
 
-    delegate bool Filter(object value);
+    delegate bool Filter(Data value);
 
     public static class Expressions
     {
@@ -35,12 +30,13 @@ namespace Spool.Harlowe
         public static Expression Parse(string input, ITrace trace = null)
             => Lexico.Lexico.Parse<TopLevelExpression>(input, trace);
 
+
         [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]   
         class TopLevelExpression : Expression
         {
-            [Alternative(typeof(TopExpression), typeof(SubExpression))] private Expression expression;
+            [Term] private TopExpression expression;
 
-            public object Evaluate(Context context)
+            public Data Evaluate(Context context)
             {
                 return expression.Evaluate(context);
             }
@@ -52,9 +48,9 @@ namespace Spool.Harlowe
             [Literal("each")] Unnamed _;
             [Term] Variable variable;
 
-            public object Evaluate(Context context)
+            public Data Evaluate(Context context)
             {
-                return new Filter(value => {
+                return new LambdaData(value => {
                     variable.Set(context, value);
                     return true;
                 });
@@ -66,254 +62,321 @@ namespace Spool.Harlowe
         {
             [Term] Variable variable;
             [Literal("where")] Unnamed _;
-            [Term] SubExpression expression;
+            [Term] OperatorSequence expression;
 
-            public object Evaluate(Context context)
+            public Data Evaluate(Context context)
             {
-                return new Filter(value => {
+                return new LambdaData(value => {
                     variable.Set(context, value);
-                    return (bool)expression.Evaluate(context);
+                    return ((Boolean)expression.Evaluate(context)).Value;
                 });
             }
         }
 
         [WhitespaceSeparated]
-        class To : TopExpression
+        class ToOrInto : TopExpression
         {
-            [Term] SubExpression Variable;
-            [Literal("to")] Unnamed _;
-            [Term] SubExpression Value;
+            [Term] OperatorSequence LHS;
+            [Regex("to|into")] string separator;
+            [Term] OperatorSequence RHS;
 
-            public object Evaluate(Context context) {
-                var m = Variable as Mutable;
+            public Data Evaluate(Context context) {
+                var swap = separator == "into";
+                var Variable = swap ? RHS : LHS;
+                var Value = swap ? LHS : RHS;
+                var m = Variable.Inner as Mutable;
                 if (m == null) {
                     throw new Exception("Value not mutable");
                 }
                 var v = Value.Evaluate(context);
-                return new VariableToValue {
-                    Source = v,
-                    Destination = m
-                };
+                return new VariableToValue(m, Value.Evaluate(context), swap, Value.Inner as Mutable);
             }
+        }
+
+        abstract class OperatorExpr
+        {            
+            protected abstract string OpString { get; }
+            [IndirectLiteral(nameof(OpString))] protected Unnamed _;
+
+            protected class OperatorExpression : Expression
+            {
+                public OperatorExpression(Func<Context, Data> eval)
+                {
+                    this.eval = eval;
+                }
+                private readonly Func<Context, Data> eval;
+                public Data Evaluate(Context context) => eval(context);
+            }
+        }
+
+        abstract class BinaryOperator : OperatorExpr
+        {
+            public abstract int Order { get; }
+            protected virtual bool Swap => false;
+            public abstract Expression Build(Expression lhs, Expression rhs);
+        }
+
+        abstract class NormalBinaryOperator : BinaryOperator
+        {
+            public abstract Operator OpCode { get; }
+            public override Expression Build(Expression lhs, Expression rhs)
+                => new OperatorExpression(c =>
+                    (Swap ? rhs : lhs).Evaluate(c).Operate(OpCode, (Swap ? lhs : rhs).Evaluate(c)));
+        }
+
+        abstract class TestOperatorExpr : BinaryOperator
+        {
+            protected virtual bool Invert => false;
+            public abstract TestOperator OpCode { get; }
+            public override Expression Build(Expression lhs, Expression rhs)
+                => new OperatorExpression(c => Boolean.Get(Invert ^
+                    (Swap ? rhs : lhs).Evaluate(c).Test(OpCode, (Swap ? lhs : rhs).Evaluate(c))));
+        }
+
+        abstract class UnaryOperator : OperatorExpr
+        {
+            public abstract UnaryOp OpCode { get; }
+            public virtual Expression Build(Expression rhs)
+                => new OperatorExpression(c => rhs.Evaluate(c).Unary(OpCode));
         }
 
         [WhitespaceSeparated]
-        class Into : TopExpression
+        class OperatorSequence : TopExpression
         {
-            [Term] SubExpression Value;
-            [Literal("into")] Unnamed _;
-            [Term] SubExpression Variable;
-
-            public object Evaluate(Context context) {
-                var m = Variable as Mutable;
-                var v = Value.Evaluate(context);
-                if (m == null) {
-                    throw new Exception("Value not mutable");
-                }
-                return new ValueIntoVariable {
-                    Source = v,
-                    Destination = m,
-                    ToRemove = Value as Mutable
-                };
-            }
-        }
-
-
-
-        // TODO: Fix this so that order of operations is respected
-        class SimpleOperatorExpr : SubExpression
-        {
-            [Term] protected SubExpression LHS;
-            [WhitespaceSurrounded] protected Operator Operator;
-            [Term] protected SubExpression RHS;
-
-            public object Evaluate(Context context)
+            [WhitespaceSeparated]
+            struct Item
             {
-                Operator.LHS = LHS;
-                Operator.RHS = RHS;
-                return Operator.Evaluate(context);
+                [Term] public BinaryOperator binary;
+                [Optional] public UnaryOperator unary;
+                [Term] public SubExpression expression;
+
+                public IEnumerable<object> Tokens() => new object[]{binary, unary, expression};
             }
-        }
-        class SimpleUnaryExpr : SubExpression
-        {
-            [WhitespaceSurrounded] protected Unary Operator;
-            [Term] protected SubExpression RHS;
+            
+            [Optional] private UnaryOperator unaryFirst;
+            [Term] private SubExpression expressionFirst;
+            [Repeat(Min = 0), WhitespaceSeparated]
+            private readonly List<Item> tokens = new List<Item>();
 
-            public object Evaluate(Context context)
+            private Expression cachedExpr;
+
+            private Expression Build()
             {
-                Operator.RHS = RHS;
-                return Operator.Evaluate(context);
-            }
-        }
-
-
-        abstract class Operator
-        {
-            /*[Term]*/ public Expression LHS;
-            [IndirectLiteral(nameof(Op))/*, WhitespaceSurrounded*/] protected Unnamed _;
-            /*[Term]*/ public Expression RHS;
-            protected abstract string Op { get; }
-
-            private static readonly MethodInfo[] methods = typeof(OperatorImpl).GetMethods();
-
-            public object Evaluate(Context context)
-            {
-                var args = new []{LHS.Evaluate(context), RHS.Evaluate(context)};
-                foreach (var m in methods.Where(m => m.Name == GetType().Name))
-                {
-                    try {
-                        return m.Invoke(null, args);
-                    } catch (TargetInvocationException e) {
-                        throw e.InnerException;
-                    } catch {
-                        continue;
+                var list = new object[]{unaryFirst, expressionFirst}
+                    .Concat(tokens.SelectMany(x => x.Tokens()))
+                    .Where(x => x != null)
+                    .ToList();
+                foreach (var u in list.OfType<UnaryOperator>().Reverse().ToList()) {
+                    var idx = list.IndexOf(u);
+                    var operand = (idx+1) < list.Count ? (list[idx+1] as Expression) : null;
+                    if (operand == null) {
+                        throw new Exception($"Expected an expression after unary {u}");
                     }
+                    list.RemoveAt(idx);
+                    list[idx] = u.Build(operand);
                 }
-                throw new Exception($"No '{GetType().Name}' operator found for arguments '{args[0]}' and '{args[1]}'");
-            }
-        }
-
-        class OperatorImpl
-        {
-            public static IEnumerable<Changer> Add(IEnumerable<Changer> lhs, IEnumerable<Changer> rhs) => lhs.Concat(rhs).ToArray();
-            public static IEnumerable<Changer> Add(IEnumerable<Changer> lhs, Changer rhs) => lhs.Append(rhs).ToArray();
-            public static IEnumerable<Changer> Add(Changer lhs, IEnumerable<Changer> rhs) => new[]{lhs}.Concat(rhs).ToArray();
-            public static double Add(double lhs, double rhs) => lhs + rhs;
-            public static string Add(string lhs, string rhs) => lhs + rhs;
-
-            public static double Sub(double lhs, double rhs) => lhs - rhs;
-            public static double Mul(double lhs, double rhs) => lhs * rhs;
-            public static double Div(double lhs, double rhs) => lhs / rhs;
-            public static double Mod(double lhs, double rhs) => lhs % rhs;
-
-            public static bool IsIn(object lhs, ICollection<object> rhs) => rhs.Contains(lhs);
-            public static bool Contains(ICollection<object> lhs, object rhs) => lhs.Contains(rhs);
-
-            public static bool Is(object lhs, object rhs) => lhs.Equals(rhs);
-            public static bool IsNot(object lhs, object rhs) => !lhs.Equals(rhs);
-
-            public static bool Less(double lhs, double rhs) => lhs < rhs;
-            public static bool Greater(double lhs, double rhs) => lhs > rhs;
-            public static bool LessOrEqual(double lhs, double rhs) => lhs <= rhs;
-            public static bool GreaterOrEqual(double lhs, double rhs) => lhs >= rhs;
-
-            public static bool Or(bool lhs, bool rhs) => lhs || rhs;
-            public static bool And(bool lhs, bool rhs) => lhs && rhs;
-
-            public static bool Not(bool rhs) => !rhs;
-        }
-
-        class LessOrEqual : Operator
-        {
-            protected override string Op => "<=";
-        }
-        class GreaterOrEqual : Operator
-        {
-            protected override string Op => ">=";
-        }
-        class Less : Operator
-        {
-            protected override string Op => "<";
-        }
-        class Greater : Operator
-        {
-            protected override string Op => ">";
-        }
-        class IsIn : Operator
-        {
-            protected override string Op => "is in";
-        }
-        class Contains : Operator
-        {
-            protected override string Op => "contains";
-        }
-        class Is : Operator
-        {
-            protected override string Op => "is";
-        }
-        class IsNot : Operator
-        {
-            protected override string Op => "is not";
-        }
-        class Matches : Operator
-        {
-            protected override string Op => "matches";
-        }
-        class Or : Operator
-        {
-            protected override string Op => "or";
-        }
-        class And : Operator
-        {
-            protected override string Op => "and";
-        }
-        class Add : Operator
-        {
-            protected override string Op => "+";
-        }
-        class Mul : Operator
-        {
-            protected override string Op => "*";
-        }
-        class Sub : Operator
-        {
-            protected override string Op => "-";
-        }
-        class Div : Operator
-        {
-            protected override string Op => "/";
-        }
-        class Modulo : Operator
-        {
-            protected override string Op => "%";
-        }
-        class Of : Operator
-        {
-            protected override string Op => "of";
-        }
-
-        abstract class Unary
-        {
-            [IndirectLiteral(nameof(Op))/*, WhitespaceSurrounded*/] protected Unnamed _;
-            /*[Term]*/ public Expression RHS;
-            protected abstract string Op { get; }
-
-            private static readonly MethodInfo[] methods = typeof(OperatorImpl).GetMethods();
-
-            public object Evaluate(Context context)
-            {
-                var args = new []{RHS.Evaluate(context)};
-                foreach (var m in methods.Where(m => m.Name == GetType().Name))
-                {
-                    try {
-                        return m.Invoke(null, args);
-                    } catch (TargetInvocationException e) {
-                        throw e.InnerException;
-                    } catch {
-                        continue;
+                foreach (var b in list.OfType<BinaryOperator>().OrderBy(x => x.Order).ToList()) {
+                    var idx = list.IndexOf(b);
+                    var lhs = (idx-1) >= 0 ? (list[idx-1] as Expression) : null;
+                    var rhs = (idx+1) < list.Count ? (list[idx+1] as Expression) : null;
+                    if (lhs == null) {
+                        throw new Exception($"Expected an expression before binary {b}");
                     }
+                    if (rhs == null) {
+                        throw new Exception($"Expected an expression after binary {b}");
+                    }
+                    list.RemoveAt(idx-1);
+                    list.RemoveAt(idx-1);
+                    list[idx-1] = b.Build(lhs, rhs);
                 }
-                throw new Exception($"No '{GetType().Name}' operator found for arguments '{args[1]}'");
+                if (list.Count != 1) {
+                    throw new Exception($"Expected an operator between {list[0]} and {list[1]}");
+                }
+                return (Expression)list[0];
+            }
+
+            public Expression Inner => cachedExpr ??= Build();
+
+            public Data Evaluate(Context context)
+            {
+                return Inner.Evaluate(context);
             }
         }
 
-        class Not : Unary
+        class LessOrEqual : TestOperatorExpr
         {
-            protected override string Op => "not";
+            public override int Order => 60;
+            public override TestOperator OpCode => TestOperator.LessOrEqual;
+            protected override string OpString => "<=";
+        }
+        class GreaterOrEqual : TestOperatorExpr
+        {
+            public override int Order => 60;
+            public override TestOperator OpCode => TestOperator.GreaterOrEqual;
+            protected override string OpString => ">=";
+        }
+        class Less : TestOperatorExpr
+        {
+            public override int Order => 60;
+            public override TestOperator OpCode => TestOperator.Less;
+            protected override string OpString => "<";
+        }
+        class Greater : TestOperatorExpr
+        {
+            public override int Order => 60;
+            public override TestOperator OpCode => TestOperator.Greater;
+            protected override string OpString => ">";
+        }
+        class IsIn : TestOperatorExpr
+        {
+            public override int Order => 70;
+            public override TestOperator OpCode => TestOperator.Contains;
+            protected override bool Swap => true;
+            protected override string OpString => "is in";
+        }
+        class Contains : TestOperatorExpr
+        {
+            public override int Order => 70;
+            public override TestOperator OpCode => TestOperator.Contains;
+            protected override string OpString => "contains";
+        }
+        class Is : TestOperatorExpr
+        {
+            public override int Order => 80;
+            public override TestOperator OpCode => TestOperator.Is;
+            protected override string OpString => "is";
+        }
+        class IsNot : TestOperatorExpr
+        {
+            public override int Order => 80;
+            public override TestOperator OpCode => TestOperator.Is;
+            protected override bool Invert => true;
+            protected override string OpString => "is not";
+        }
+        class Matches : TestOperatorExpr
+        {
+            public override int Order => 80;
+            public override TestOperator OpCode => TestOperator.Matches;
+            protected override string OpString => "matches";
+        }
+        class Or : NormalBinaryOperator
+        {
+            public override int Order => 90;
+            public override Operator OpCode => Operator.Or;
+            protected override string OpString => "or";
+        }
+        class And : NormalBinaryOperator
+        {
+            public override int Order => 90;
+            public override Operator OpCode => Operator.And;
+            protected override string OpString => "and";
+        }
+        class Add : NormalBinaryOperator
+        {
+            public override int Order => 40;
+            public override Operator OpCode => Operator.Add;
+            protected override string OpString => "+";
+        }
+        class Mul : NormalBinaryOperator
+        {
+            public override int Order => 30;
+            public override Operator OpCode => Operator.Multiply;
+            protected override string OpString => "*";
+        }
+        class Sub : NormalBinaryOperator
+        {
+            public override int Order => 50;
+            public override Operator OpCode => Operator.Subtract;
+            protected override string OpString => "-";
+        }
+        class Div : NormalBinaryOperator
+        {
+            public override int Order => 20;
+            public override Operator OpCode => Operator.Divide;
+            protected override string OpString => "/";
+        }
+        class Modulo : NormalBinaryOperator
+        {
+            public override int Order => 20;
+            public override Operator OpCode => Operator.Modulo;
+            protected override string OpString => "%";
+        }
+        abstract class MemberAccess : BinaryOperator
+        {
+            class MemberAccessExpression : Mutable
+            {
+                public MemberAccessExpression(Mutable lhs, Expression rhs)
+                {
+                    this.lhs = lhs;
+                    this.rhs = rhs;
+                }
+                private readonly Mutable lhs;
+                private readonly Expression rhs;
+
+                public void Delete(Context context) =>
+                    lhs.Set(
+                        context,
+                        lhs.Evaluate(context).MutableMember(rhs.Evaluate(context)).Delete()
+                    );
+
+                public void Set(Context context, Data value) =>
+                    lhs.Set(
+                        context,
+                        lhs.Evaluate(context).MutableMember(rhs.Evaluate(context)).Set(value)
+                    );
+
+                public Data Evaluate(Context context) =>
+                    lhs.Evaluate(context).Member(rhs.Evaluate(context));
+            }
+
+            public override Expression Build(Expression lhs, Expression rhs)
+            {
+                var _lhs = Swap ? rhs : lhs;
+                var _rhs = Swap ? lhs : rhs;
+                var name = _rhs is Identifier str ? new OperatorExpression(_ => new String(str.Text)) : _rhs;
+                if (_lhs is Mutable m) {
+                    return new MemberAccessExpression(m, _rhs);
+                }
+                return new OperatorExpression(c => _lhs.Evaluate(c).Member(name.Evaluate(c)));
+            }
+        }
+        // TODO: Left-associativity
+        class Of : MemberAccess
+        {
+            public override int Order => 10;
+            protected override string OpString => "of";
+            protected override bool Swap => true;
+        }
+        class Posessive : MemberAccess
+        {
+            public override int Order => 0;
+            protected override string OpString => "'s";
+        }
+
+        // TODO: Unary operator ordering
+        class Not : UnaryOperator
+        {
+            protected override string OpString => "not";
+            public override UnaryOp OpCode => UnaryOp.Not;
+        }
+
+        class Minus : UnaryOperator
+        {
+            protected override string OpString => "-";
+            public override UnaryOp OpCode => UnaryOp.Minus;
         }
 
         [WhitespaceSeparated, SurroundBy("(", ")")]
         class Parenthesized : SubExpression
         {
-            [Pass, Cut] Unnamed _;
-            [Term] SubExpression inner;
+            [Term] TopExpression inner;
 
-            public object Evaluate(Context context) => inner.Evaluate(context);
+            public Data Evaluate(Context context) => inner.Evaluate(context);
         }
 
         public abstract class ObjectExpression : Renderable, SubExpression
         {
-            public abstract object Evaluate(Context context);
+            public abstract Data Evaluate(Context context);
 
             public void Render(Context context)
             {
@@ -332,106 +395,15 @@ namespace Spool.Harlowe
             }
         }
 
-        [WhitespaceSeparated]
-        class MemberAccess : Mutable, SubExpression
-        {
-            [Suffix("'s")] public SubExpression Object { get; set; }
-            [Alternative(
-                typeof(Macro),
-                typeof(Parenthesized),
-                typeof(Variable),
-                typeof(Integer),
-                typeof(Float),
-                typeof(QuotedString),
-                typeof(SingleQuotedString),
-                typeof(BareString)
-            )] public SubExpression Member { get; set; }
-
-            public object Evaluate(Context context)
-            {
-                var obj = Object.Evaluate(context);
-                var member = Member.Evaluate(context);
-                switch (obj) {
-                case IDictionary map:
-                    return map[member];
-                case IList array:
-                    switch (member) {
-                        case "length":
-                            return (double)array.Count;
-                        case double idx:
-                            return array[(int)idx - 1];
-                    }
-                    break;
-                case Color color:
-                    return member switch {
-                        "r" => (double)color.R,
-                        "g" => (double)color.G,
-                        "b" => (double)color.B,
-                        "h" => (double)color.GetHue(),
-                        "s" => (double)color.GetSaturation(),
-                        "l" => (double)color.GetBrightness(),
-                        _ => throw new Exception("Member not found")
-                    };
-                case string str:
-                    switch (member) {
-                        case "length":
-                            return (double)str.Length;
-                        case double idx:
-                            return str[(int)idx - 1].ToString();
-                    }
-                    break;
-                }
-                throw new Exception("Member not found");
-            }
-
-            public void Set(Context context, object value)
-            {
-                var obj = Object.Evaluate(context);
-                var member = Member.Evaluate(context);
-                switch (obj) {
-                case IDictionary map:
-                    map[member] = value;
-                    return;
-                case IList array:
-                    switch (member) {
-                        case double idx:
-                            array[(int)idx - 1] = value;
-                            return;
-                    }
-                    break;
-                }
-                throw new Exception("Member not found");
-            }
-
-            public void Delete(Context context)
-            {
-                var obj = Object.Evaluate(context);
-                var member = Member.Evaluate(context);
-                switch (obj) {
-                case IDictionary map:
-                    map.Remove(member);
-                    return;
-                case IList array:
-                    switch (member) {
-                        case double idx:
-                            array.RemoveAt((int)idx - 1);
-                            return;
-                    }
-                    break;
-                }
-                throw new Exception("Member not found");
-            }
-        }
-
         public class Variable : ObjectExpression, Mutable
         {
             [CharSet("$_")] private char variableType { get => Global ? '$' : '_'; set => Global = value == '$'; }
             public bool Global { get; set; }
             [Regex(@"[a-zA-Z_][a-zA-Z0-9_]*")] public string Name { get; set; }
 
-            public override object Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
+            public override Data Evaluate(Context context) => (Global ? context.Globals : context.Locals)[Name];
 
-            public void Set(Context context, object value) => (Global ? context.Globals : context.Locals)[Name] = value;
+            public void Set(Context context, Data value) => (Global ? context.Globals : context.Locals)[Name] = value;
 
             public void Delete(Context context) => (Global ? context.Globals : context.Locals).Remove(Name);
         }
@@ -441,14 +413,14 @@ namespace Spool.Harlowe
             [CharRange("09"), Repeat] string number;
             [Regex("st|nd|rd|th")] Unnamed _;
 
-            public object Evaluate(Context context) => (double)int.Parse(number);
+            public Data Evaluate(Context context) => new Number(int.Parse(number));
         }
 
         class Float : SubExpression
         {
             [Term] double number;
 
-            public object Evaluate(Context context) => number;
+            public Data Evaluate(Context context) => new Number(number);
         }
 
         class HookRef : SubExpression
@@ -457,62 +429,66 @@ namespace Spool.Harlowe
             [CharRange("az", "AZ", "09", "__"), Repeat] public string Name;
 
             // TODO: Change these depending on the renderer
-            private static readonly Dictionary<string, XName> BuiltInNames = new Dictionary<string, XName>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "Page", XName.Get("tw-story") },
-                { "Passage", XName.Get("tw-passage") },
-                { "Sidebar", XName.Get("tw-sidebar") },
-                { "Link", XName.Get("link") }
-            };
+            // private static readonly Dictionary<string, XName> BuiltInNames = new Dictionary<string, XName>(StringComparer.OrdinalIgnoreCase)
+            // {
+            //     { "Page", XName.Get("tw-story") },
+            //     { "Passage", XName.Get("tw-passage") },
+            //     { "Sidebar", XName.Get("tw-sidebar") },
+            //     { "Link", XName.Get("link") }
+            // };
 
-            public object Evaluate(Context context)
+            public Data Evaluate(Context context)
             {
-                BuiltInNames.TryGetValue(Name, out var builtInName);
-                var nameAttr = XName.Get("name");
-                IEnumerable<XContainer> generator(XContainer root)
-                {
-                    var current = root.FirstNode;
-                    while (current != null)
-                    {
-                        if (current is XElement el && (
-                            el.Attribute(nameAttr)?.Value?.Equals(Name, StringComparison.OrdinalIgnoreCase) == true
-                            || el.Name == builtInName)) {
-                            yield return el;
-                        }
-                        var next = current.NextNode;
-                        while (next == null && current != null) {
-                            current = current.Parent;
-                            next = current.NextNode;
-                        }
-                        current = next;
-                    }
-                }
-                return generator(context.Screen);
+                // BuiltInNames.TryGetValue(Name, out var builtInName);
+                // var nameAttr = XName.Get("name");
+                // IEnumerable<XContainer> generator(XContainer root)
+                // {
+                //     var current = root.FirstNode;
+                //     while (current != null)
+                //     {
+                //         if (current is XElement el && (
+                //             el.Attribute(nameAttr)?.Value?.Equals(Name, StringComparison.OrdinalIgnoreCase) == true
+                //             || el.Name == builtInName)) {
+                //             yield return el;
+                //         }
+                //         var next = current.NextNode;
+                //         while (next == null && current != null) {
+                //             current = current.Parent;
+                //             next = current.NextNode;
+                //         }
+                //         current = next;
+                //     }
+                // }
+                return new HookName(Name);
             }
         }
 
         [WhitespaceSeparated, SurroundBy("(", ")")]
         public class Macro : ObjectExpression
         {
-            public struct Argument
+            struct Argument
             {
                 [Optional, Literal("...")] public string spread;
-                [Alternative(typeof(TopExpression), typeof(SubExpression))] public Expression value;
+                [Term] public TopExpression value;
             }
 
-            [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut] public string Name { get; set; }
-            [SeparatedBy(typeof(Comma)), Repeat(Min = 0)] public List<Argument> Arguments { get; } = new List<Argument>();
-            [Optional] protected Comma _ { get; set; } // TODO: Replace with TrailingSeparator when available
+            [CharRange("az", "AZ", "09", "__", "--"), Repeat, Suffix(":"), Cut]
+            private string Name;
+
+            [SeparatedBy(typeof(Comma)), Repeat(Min = 0)]
+            private readonly List<Argument> Arguments = new List<Argument>();
+            
+            [Optional] private Comma _; // TODO: Replace with TrailingSeparator when available
 
             [WhitespaceSurrounded]
-            protected struct Comma {
+            struct Comma {
                 [Literal(",")] Unnamed _;
             }
 
-            public override object Evaluate(Context context)
+            public override Data Evaluate(Context context)
             {
                 var normalizedName = Name.Replace("-", "").Replace("_", "");
-                IEnumerable<object> GetArgList()
+                IEnumerable<Data> GetArgList()
                 {
                     foreach (var a in Arguments)
                     {
@@ -520,30 +496,65 @@ namespace Spool.Harlowe
                             yield return a.value.Evaluate(context);
                         } else {
                             var toSpread = a.value.Evaluate(context);
-                            if (toSpread is IEnumerable enumerable) {
-                                foreach (var e in enumerable) {
-                                    yield return e;
-                                }
-                            } else {
-                                throw new Exception($"Tried to use spread operator on {toSpread}");
+                            foreach (var e in toSpread.Spread()) {
+                                yield return e;
                             }
                         }
                     }
                 }
                 var args = GetArgList().ToArray();
-                foreach (var m in context.MacroProvider.GetType().GetMethods().Where(x => x.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase)))
+                foreach (var m in context.MacroProvider.GetType().GetMethods()
+                    .Where(x => x.Name.Equals(normalizedName, StringComparison.OrdinalIgnoreCase))
+                )
                 {
                     try {
-                        var mArgs = args;
                         var parameters = m.GetParameters();
+                        Type varargType = null;
                         if (parameters.Length > 0 && parameters.Last().GetCustomAttribute<ParamArrayAttribute>() != null)
                         {
-                            var inArray = args.Skip(parameters.Length - 1).ToArray();
-                            var pArray = Array.CreateInstance(parameters.Last().ParameterType.GetElementType(), inArray.Length);
-                            inArray.CopyTo(pArray, 0);
-                            mArgs = args.Take(parameters.Length - 1).Append(pArray).ToArray();
+                            varargType = parameters.Last().ParameterType.GetElementType();
                         }
-                        return m.Invoke(context.MacroProvider, mArgs);
+                        object ConvertArg(int idx)
+                        {
+                            Type target;
+                            if (varargType != null && idx >= parameters.Length - 1) {
+                                target = varargType;
+                            } else {
+                                target = parameters[idx].ParameterType;
+                            }
+                            if (target.IsInstanceOfType(args[idx])) {
+                                return args[idx];
+                            }
+                            if (target.IsInstanceOfType(args[idx].Object)) {
+                                return args[idx].Object;
+                            }
+                            throw new InvalidCastException("Invalid parameter");
+                        }
+                        var convertedArgs = Enumerable.Range(0, args.Length).Select(ConvertArg).ToArray();
+                        object[] finalArgs;
+                        if (varargType != null) {
+                            var vargs = System.Array.CreateInstance(varargType, args.Length - (parameters.Length - 1));
+                            convertedArgs.Skip(parameters.Length - 1).ToArray().CopyTo(vargs, 0);
+                            finalArgs = convertedArgs.Take(parameters.Length - 1).Concat(new []{vargs}).ToArray();
+                        } else {
+                            finalArgs = convertedArgs;
+                        }
+                        var ret = m.Invoke(context.MacroProvider, finalArgs);
+                        if (ret is Data d) {
+                            return d;
+                        } else if (ret is Changer c) {
+                            return new CommandData(c);
+                        } else if (ret is Command c1) {
+                            return new CommandData(c1);
+                        } else if (ret is Renderable c2) {
+                            return new CommandData(c2);
+                        } else if (ret == null) {
+                            return null; // TODO: 'instant' sentinal?
+                        } else {
+                            throw new TargetInvocationException(
+                                new Exception($"Macro {Name} returned {ret}, not a Data subclass")
+                            );
+                        }
                     } catch (TargetInvocationException) {
                         throw;
                     } catch {
@@ -558,14 +569,14 @@ namespace Spool.Harlowe
         {
             [Literal("false")] Unnamed _;
 
-            public object Evaluate(Context context) => false;
+            public Data Evaluate(Context context) => Boolean.False;
         }
 
         class True : SubExpression
         {
             [Literal("true")] Unnamed _;
 
-            public object Evaluate(Context context) => true;
+            public Data Evaluate(Context context) => Boolean.True;
         }
 
         [SurroundBy("\"")]
@@ -573,7 +584,7 @@ namespace Spool.Harlowe
         {
             [Regex(@"[^""]*")] public string Text { get; set; }
 
-            public object Evaluate(Context context) => Text;
+            public Data Evaluate(Context context) => new String(Text);
         }
 
         [SurroundBy("'")]
@@ -581,36 +592,42 @@ namespace Spool.Harlowe
         {
             [Regex(@"[^']*")] public string Text { get; set; }
 
-            public object Evaluate(Context context) => Text;
+            public Data Evaluate(Context context) => new String(Text);
         }
 
-        class BareString : SubExpression
+        class Identifier : SubExpression
         {
             [CharRange("az", "AZ", "09", "__", "--"), Repeat] public string Text { get; set; }
 
-            public object Evaluate(Context context)
+            private static readonly Dictionary<string, uint> colors = new Dictionary<string, uint>
+            {
+                {"red", 0xffe61919},
+                {"orange", 0xffe68019},
+                {"yellow", 0xffe5e619},
+                {"lime", 0xff80e619},
+                {"green", 0xff19e619},
+                {"aqua", 0xff19e5e6},
+                {"cyan", 0xff19e5e6},
+                {"blue", 0xff197fe6},
+                {"navy", 0xff1919e6},
+                {"purple", 0xff7f19e6},
+                {"magenta", 0xffe619e5},
+                {"fuchsia", 0xffe619e5},
+                {"white", 0xffffffff},
+                {"black", 0xff000000},
+                {"gray", 0xff888888},
+                {"grey", 0xff888888},
+            };
+
+            public Data Evaluate(Context context)
             {
                 unchecked {
                     return Text switch {
-                        "visit" => context.Passage.Visits,
+                        "visit" => new Number(context.Passage.Visits),
                         "it" => throw new NotImplementedException(),
-                        "red" => Color.FromArgb((int)0xffe61919),
-                        "orange" => Color.FromArgb((int)0xffe68019),
-                        "yellow" => Color.FromArgb((int)0xffe5e619),
-                        "lime" => Color.FromArgb((int)0xff80e619),
-                        "green" => Color.FromArgb((int)0xff19e619),
-                        "aqua" => Color.FromArgb((int)0xff19e5e6),
-                        "cyan" => Color.FromArgb((int)0xff19e5e6),
-                        "blue" => Color.FromArgb((int)0xff197fe6),
-                        "navy" => Color.FromArgb((int)0xff1919e6),
-                        "purple" => Color.FromArgb((int)0xff7f19e6),
-                        "magenta" => Color.FromArgb((int)0xffe619e5),
-                        "fuchsia" => Color.FromArgb((int)0xffe619e5),
-                        "white" => Color.FromArgb((int)0xffffffff),
-                        "black" => Color.FromArgb((int)0xff000000),
-                        "gray" => Color.FromArgb((int)0xff888888),
-                        "grey" => Color.FromArgb((int)0xff888888),
-                        _ => Text
+                        _ => colors.TryGetValue(Text, out var c)
+                            ? new Color(System.Drawing.Color.FromArgb((int)c))
+                            : throw new Exception($"{Text} not defined")
                     };
                 }
             }

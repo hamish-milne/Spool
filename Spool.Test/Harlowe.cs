@@ -85,22 +85,22 @@ namespace Spool.Test
             },
             new [] {
 @"(print: (a: 2, 3, 4))",
-@"[2, 3, 4]"
+@"2,3,4"
             },
             new [] {
 @"(print: (a: 2, 3, 4,))",
-@"[2, 3, 4]"
+@"2,3,4"
             },
             new [] {
 @"(print: (a: ...(a: 2, 3, 4)))",
-@"[2, 3, 4]"
+@"2,3,4"
             },
             new [] {
 @"$1.50",
 "$1.50"
             },
             new [] {
-@"(set: $plushieName to Felix)(put: ""pencil"" into _heldItem)
+@"(set: $plushieName to 'Felix')(put: ""pencil"" into _heldItem)
 Your beloved plushie, $plushieName, awaits you after a long work day.
 You put your _heldItem down and lift it for a snuggle.",
 @"
@@ -188,7 +188,7 @@ And this.</mark>"
             },
             new []
             {
-@"(set: $favouritefood to pizza)(set: $battlecry to ""Save a "" + $favouritefood + "" for me!"")$battlecry",
+@"(set: $favouritefood to 'pizza')(set: $battlecry to ""Save a "" + $favouritefood + "" for me!"")$battlecry",
 @"Save a pizza for me!"
             },
             new []
@@ -223,7 +223,7 @@ I have 2 batteries and 4 bottles"
             new []
             {
 @"(set: $arr to (a: 2, 3, 5))(move: $arr's 2nd into $var)$var; (print: $arr)",
-@"3; [2, 5]"
+@"3; 2,5"
             },
             new []
             {
@@ -295,7 +295,7 @@ Before they can react, you unleash a typhoon of tickles!
             },
             new []
             {
-@"(for: each _item, sword, key, scroll) [You have the _item. ]",
+@"(for: each _item, 'sword', 'key', 'scroll') [You have the _item. ]",
 @"You have the sword. You have the key. You have the scroll. "
             },
 //             new []
@@ -311,7 +311,7 @@ Before they can react, you unleash a typhoon of tickles!
             new []
             {
 @"(set: $cash to 250)
-(set: $status to (cond: $cash >= 300, stable, $cash >= 200, lean, $cash >= 100, skint, broke))
+(set: $status to (cond: $cash >= 300, 'stable', $cash >= 200, 'lean', $cash >= 100, 'skint', 'broke'))
 $status",
 @"
 
@@ -371,20 +371,19 @@ lean"
 
         public static object[][] ExampleExpressions = {
             // TODO: HSL impl
+            new []{"(1 + 2) / 0.25 + (3 + 2) * 0.2", "13"},
             // new []{"(hsl: 120, 0.8, 0.5)'s s", "0.8"},
             // new []{"(hsla: 28, 1, 0.4)'s h", "28"},
             new []{"(rgb: 255, 0, 47)'s b", "47"},
             new []{"(rgba: 90, 0, 0)'s r", "90"},
-            // TODO: infix op precedence
-            // new []{"(all-pass: _num where _num > 1 and _num < 14, 6, 8, 12, 10, 9)", "true"},
+            new []{"(all-pass: _num where _num > 1 and _num < 14, 6, 8, 12, 10, 9)", "true"},
             new []{"(count: (a:1,2,3,2,1), 1, 2)", "4"},
             new []{"(count: 'Though', 'ugh','u','h')", "4"},
             new []{"(count: 'Though','ugh','h')", "3"},
             new []{"(count: 'Though','h') - (count: 'Though','ugh')", "1"},
-            // TODO: Ordering
-            // new []{"(datapairs: (dm:'B',24, 'A',25))", "(a: (dm: 'name', 'A', 'value', 25), (dm: 'name', 'B', 'value', 24))"},
-            // new []{"(datanames: (dm:'B','Y', 'A','X'))", "(a: 'A','B')"},
-            // new []{"(datavalues: (dm:'B',24, 'A',25))", "(a: 25,24)"},
+            new []{"(datapairs: (dm:'B',24, 'A',25))", "(a: (dm: 'name', 'A', 'value', 25), (dm: 'name', 'B', 'value', 24))"},
+            new []{"(datanames: (dm:'B','Y', 'A','X'))", "(a: 'A','B')"},
+            new []{"(datavalues: (dm:'B',24, 'A',25))", "(a: 25,24)"},
             new []{"(find: _item where _item's 1st is 'A', 'Thorn', 'Apple', 'Cryptid', 'Anchor')", "(a: 'Apple', 'Anchor')"},
             // new []{"(find: _num where (_num >= 12) and (it % 2 is 0), 9, 10, 11, 12, 13, 14, 15, 16)", "(a: 12, 14, 16)"},
             new []{"(interlaced: (a: 'A', 'B', 'C', 'D'), (a: 1, 2, 3))", "(a: 'A',1,'B',2,'C',3)"},
@@ -396,7 +395,7 @@ lean"
             new []{"(reversed: 1,2,3,4)", "(a: 4,3,2,1)"},
             new []{"(rotated: 1, 'A','B','C','D')", "(a: 'D','A','B','C')"},
             new []{"(rotated: -2, 'A','B','C','D')", "(a: 'C','D','A','B')"},
-            // new []{"(sorted: 'A','C','E','G', 2, 1)", "(a: 1, 2, 'A', 'C', 'E', 'G')"},
+            new []{"(sorted: 'A','C','E','G', 2, 1)", "(a: 1, 2, 'A', 'C', 'E', 'G')"},
         };
 
         [Theory]
@@ -411,7 +410,7 @@ lean"
                 // , trace
             ).Evaluate(new Context());
             var actual = Expressions.Parse(lhs
-                // , trace
+                , trace
             ).Evaluate(new Context());
             Assert.Equal(expected, actual);
         }

@@ -155,10 +155,10 @@ namespace Spool.Harlowe
                 bool? hidden = false;
                 changerObjs.AddRange(changerExprs.Select(x => {
                     var val = x.Evaluate(context);
-                    if (val is Changer c) {
+                    if ((val as CommandData)?.Object is Changer c) {
                         return c;
-                    } else if (val is bool b) {
-                        hidden |= !b;
+                    } else if (val is Boolean b) {
+                        hidden |= !b.Value;
                         return NullChanger.Instance;
                     } else {
                         throw new Exception("Hook prefix must be a Changer or Boolean");
@@ -190,11 +190,11 @@ namespace Spool.Harlowe
                     {
                         // Otherwise, render the content of the final macro/variable:
                         var macroResult = changers.Last().Evaluate(context);
-                        if (macroResult is Renderable r) {
+                        if ((macroResult as CommandData)?.Object is Renderable r) {
                             renderHookBody = () => r.Render(context);
-                        } else if (macroResult is string || macroResult is double) {
+                        } else if (macroResult is String || macroResult is Number) {
                             renderHookBody = () => context.AddText(macroResult.ToString());
-                        } else if (macroResult is Command cmd) {
+                        } else if ((macroResult as CommandData)?.Object is Command cmd) {
                             if (changerObjs.Count > 0) {
                                 throw new Exception("Changers cannot be applied to Commands");
                             }

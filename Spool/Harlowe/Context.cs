@@ -28,8 +28,8 @@ namespace Spool.Harlowe
             MacroProvider = new BuiltInMacros(this);
         }
 
-        public IDictionary<string, object> Locals { get; } = new Dictionary<string, object>();
-        public IDictionary<string, object> Globals { get; } = new Dictionary<string, object>();
+        public IDictionary<string, Data> Locals { get; } = new Dictionary<string, Data>();
+        public IDictionary<string, Data> Globals { get; } = new Dictionary<string, Data>();
         public IDictionary<XContainer, Renderable> Hidden { get; } = new Dictionary<XContainer, Renderable>();
         public Passage Passage { get; } = new Passage();
         public IDictionary<string, Passage> Passages { get; } = new Dictionary<string, Passage>();

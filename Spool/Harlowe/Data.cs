@@ -1,11 +1,12 @@
 using System.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace Spool.Harlowe
 {
 
-    enum Operator
+    public enum Operator
     {
         Add,
         Subtract,
@@ -16,7 +17,7 @@ namespace Spool.Harlowe
         Or,
     }
 
-    enum TestOperator
+    public enum TestOperator
     {
         Is,
         Contains,
@@ -27,7 +28,7 @@ namespace Spool.Harlowe
         GreaterOrEqual
     }
 
-    enum UnaryOp
+    public enum UnaryOp
     {
         Not,
         Minus,
@@ -41,30 +42,55 @@ namespace Spool.Harlowe
         }
     }
 
-    interface Data : IComparable<Data>
+    public interface Mutator
     {
-        Data Member(Data member);
-        Data Clone();
-        T As<T>();
-        Data Operate(Operator op, Data rhs);
-        Data Unary(UnaryOp op);
-        bool Test(TestOperator op, Data rhs);
+        Data Set(Data value);
+        Data Delete();
+    }
 
+    public abstract class Data : IComparable<Data>, IEquatable<Data>
+    {
+        public virtual Data Member(Data member) => throw new NotSupportedException();
+        public virtual Data Operate(Operator op, Data rhs) => throw new NotSupportedException();
+        public virtual Data Unary(UnaryOp op) => throw new NotSupportedException();
+        public virtual bool Test(TestOperator op, Data rhs)
+        {
+            return op switch {
+                TestOperator.Is => Equals(rhs),
+                TestOperator.Matches => Equals(rhs) || (rhs is DataType dt && this.IsAn(dt)),
+                _ => throw new NotSupportedException()
+            };
+        }
+        public virtual Mutator MutableMember(Data member) => throw new NotSupportedException();
+        public virtual IEnumerable<Data> Spread() => throw new NotSupportedException();
+        private object cachedObject;
+        public object Object => cachedObject ??= GetObject();
+        protected abstract object GetObject();
+
+        private static readonly IComparer comparer = new AlphanumComparator.AlphanumComparator();
+
+        public int CompareTo(Data other) => comparer.Compare(ToString(), other.ToString());
+
+        private string cachedString;
+        protected virtual string GetString() => Object.ToString();
+
+        public virtual bool Equals(Data other) => Object.Equals(other.Object);
+        public override sealed bool Equals(object obj) => obj is Data d && Equals(d);
+        public override int GetHashCode() => ToString().GetHashCode();
+        public override sealed string ToString() => cachedString ??= GetString();
+
+        public abstract bool Serializable { get; }
     }
 
     class Number : Data
     {
+        public override bool Serializable => true;
         public double Value { get; }
+        protected override object GetObject() => Value;
 
         public Number(double value) => Value = value;
 
-        public T As<T>() => (T)(object)Value;
-
-        public Data Clone() => this;
-
-        public Data Member(Data member) => throw new NotSupportedException();
-
-        public Data Operate(Operator op, Data rhs)
+        public override Data Operate(Operator op, Data rhs)
         {
             return rhs switch {
                 Number num => op switch {
@@ -74,310 +100,561 @@ namespace Spool.Harlowe
                     Operator.Divide => new Number(Value / num.Value),
                     _ => throw new NotSupportedException()
                 },
-                _ => throw new NotSupportedException()
+                _ => base.Operate(op, rhs)
             };
         }
 
-        public bool Test(TestOperator op, Data rhs)
+        public override bool Test(TestOperator op, Data rhs)
         {
             return rhs switch {
                 Number num => op switch {
                     TestOperator.Matches => Value == num.Value,
-                    TestOperator.Is => Value == num.Value,
                     TestOperator.Less => Value < num.Value,
                     TestOperator.Greater => Value > num.Value,
                     TestOperator.LessOrEqual => Value <= num.Value,
                     TestOperator.GreaterOrEqual => Value >= num.Value,
-                    _ => throw new NotSupportedException()
+                    _ => base.Test(op, rhs)
                 },
-                _ => throw new NotSupportedException()
+                _ => base.Test(op, rhs)
             };
         }
 
-        public Data Unary(UnaryOp op)
+        public override Data Unary(UnaryOp op)
         {
             return op switch {
                 UnaryOp.Minus => new Number(-Value),
-                _ => throw new NotSupportedException()
+                _ => base.Unary(op)
             };
         }
 
-        public int CompareTo(Data other)
-        {
-            throw new NotImplementedException();
-        }
+        public override bool Equals(Data other) => other is Number num && num.Value == Value;
     }
 
     class Boolean : Data
     {
+        public override bool Serializable => true;
         public static Boolean Get(bool value) => value ? True : False;
         public static Boolean True { get; } = new Boolean(true);
         public static Boolean False { get; } = new Boolean(false);
 
         private Boolean(bool value) => Value = value;
         public bool Value { get; }
-        public T As<T>() => (T)(object)Value;
-
-        public Data Clone() => this;
-        public Data Member(Data member) => throw new NotSupportedException();
-
-        public Data Operate(Operator op, Data rhs)
+        protected override object GetObject() => Value;
+        public override Data Operate(Operator op, Data rhs)
         {
             return rhs switch {
                 Boolean b => op switch {
                     Operator.And => Get(Value && b.Value),
                     Operator.Or => Get(Value && b.Value),
-                    _ => throw new NotSupportedException()
+                    _ => base.Operate(op, rhs)
                 },
-                _ => throw new NotSupportedException()
+                _ => base.Operate(op, rhs)
             };
         }
 
-        public Data Unary(UnaryOp op)
+        public override Data Unary(UnaryOp op)
         {
             return op switch {
                 UnaryOp.Not => Get(!Value),
-                _ => throw new NotSupportedException()
+                _ => base.Unary(op)
             };
         }
 
-        public bool Test(TestOperator op, Data rhs)
-        {
-            return rhs switch {
-                Boolean b => op switch {
-                    TestOperator.Is => Value == b.Value,
-                    _ => throw new NotSupportedException()
-                },
-                _ => throw new NotSupportedException()
-            };
-        }
-
-        public int CompareTo(Data other)
-        {
-            throw new NotImplementedException();
-        }
+        public override bool Equals(Data other) => other is Boolean b && b.Value == Value;
     }
 
     class String : Data
     {
+        public override bool Serializable => true;
         public String(string value)
         {
             Value = value;
         }
 
         public string Value { get; }
+        protected override object GetObject() => Value;
 
-        public T As<T>() => (T)(object)Value;
+        public override bool Equals(Data other) => other is String str && Value == str.Value;
 
-        public Data Clone() => this;
-
-        public int CompareTo(Data other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Data Member(Data member)
+        public override Data Member(Data member)
         {
             return member switch {
                 String str => str.Value switch {
                     "last" => new String(Value[Value.Length - 1].ToString()),
                     "length" => new Number(Value.Length),
-                    "all" => new AllOf(this),
-                    "any" => new AnyOf(this),
-                    _ => throw new NotSupportedException()
+                    "all" => new Checker(Check((s, c) => s.All(x => x == c))),
+                    "any" => new Checker(Check((s, c) => s.Any(x => x == c))),
+                    _ => base.Member(member)
                 },
-                Number num => new String(Value[(int)num.Value].ToString()),
-                Array arr => null,
-                _ => throw new NotSupportedException()
+                Number num => new String(Value[(int)num.Value - 1].ToString()),
+                Array selector => new String(new string(
+                    selector.Select(x => Value[(int)(x as Number ?? 
+                        throw new NotSupportedException("Selector must only contain numbers")
+                    ).Value]).ToArray())
+                ),
+                _ => base.Member(member)
             };
         }
 
-        public Data Operate(Operator op, Data rhs)
+        public override Data Operate(Operator op, Data rhs)
         {
             return rhs switch {
                 String str => op switch {
                     Operator.Add => new String(Value + str.Value),
-                    _ => throw new NotSupportedException()
+                    _ => base.Operate(op, rhs)
                 },
-                _ => throw new NotSupportedException()
+                _ => base.Operate(op, rhs)
             };
         }
 
-        public bool Test(TestOperator op, Data rhs)
+        private Func<Data, bool> Check(Func<string, char, bool> checker)
         {
-            return rhs switch {
-                String str => op switch {
-                    TestOperator.Is => Value == str.Value,
-                    _ => throw new NotSupportedException()
-                },
-                _ => throw new NotSupportedException()
-            };
-        }
-
-        public Data Unary(UnaryOp op) => throw new NotSupportedException();
-
-        private abstract class Checker : Data
-        {
-            protected Checker(String parent) => this.parent = parent;
-            private readonly String parent;
-            public T As<T>() => throw new NotSupportedException();
-            public Data Clone() => this;
-            public Data Member(Data member) => throw new NotSupportedException();
-            public Data Operate(Operator op, Data rhs) => throw new NotSupportedException();
-            public Data Unary(UnaryOp op) => throw new NotSupportedException();
-
-            public bool Test(TestOperator op, Data rhs)
-            {
-                if (rhs is String str && op == TestOperator.Is) {
+            return rhs => {
+                if (rhs is String str) {
                     if (str.Value.Length != 1) {
                         throw new NotSupportedException("Must be compared with a single character");
                     }
-                    return Check(parent.Value, str.Value[0]);
+                    return checker(Value, str.Value[0]);
                 }
                 throw new NotSupportedException();
+            };
+        }
+    }
+
+    class Checker : Data
+    {
+        public override bool Serializable => false;
+        public Checker(Func<Data, bool> checker) => this.checker = checker;
+        private readonly Func<Data, bool> checker;
+
+        public override bool Test(TestOperator op, Data rhs)
+        {
+            if (op == TestOperator.Is) {
+                return checker(rhs);
+            } else {
+                throw new NotSupportedException();
             }
-
-            protected abstract bool Check(string value, char c);
         }
 
-        private class AllOf : Checker
+        protected override object GetObject() => checker;
+
+        private static Func<Data, bool> Check(IEnumerable<Data> list, Func<IEnumerable<Data>, Data, bool> checker)
         {
-            public AllOf(String parent) : base(parent) {}
-
-            protected override bool Check(string value, char c) => value.All(x => x == c);
+            return rhs => checker(list, rhs);
         }
 
-        private class AnyOf : Checker
-        {
-            public AnyOf(String parent) : base(parent) {}
-
-            protected override bool Check(string value, char c) => value.Contains(c.ToString());
-        }
+        public static Checker All(IEnumerable<Data> list) => new Checker(rhs => list.All(x => x == rhs));
+        public static Checker Any(ICollection<Data> list) => new Checker(rhs => list.Contains(rhs));
     }
 
     class DataType : Data
     {
+        public override bool Serializable => true;
         public Type Value { get; }
-        public T As<T>() => (T)(object)Value;
-
-        public Data Clone() => this;
-
-        public int CompareTo(Data other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Data Member(Data member) => throw new NotSupportedException();
-
-        public Data Operate(Operator op, Data rhs) => throw new NotSupportedException();
-
-        public bool Test(TestOperator op, Data rhs)
-        {
-            return rhs switch {
-                DataType b => op switch {
-                    TestOperator.Is => Value == b.Value,
-                    _ => throw new NotSupportedException()
-                },
-                _ => throw new NotSupportedException()
-            };
-        }
-
-        public Data Unary(UnaryOp op) => throw new NotSupportedException();
+        protected override object GetObject() => Value;
+        protected override string GetString() => $"[the {Value.Name.ToString().ToLowerInvariant()} datatype]";
     }
 
-    class DataSet : Data
+    class DataSet : Data, ICollection<Data>
     {
-        public DataSet(HashSet<object> value)
+        public override bool Serializable => true;
+        public DataSet(IEnumerable<Data> value)
         {
-            Value = value;
+            this.value = new HashSet<Data>(value);
         }
 
-        public HashSet<object> Value { get; }
+        private readonly HashSet<Data> value;
 
-        public T As<T>() => (T)(object)Value;
+        public int Count => throw new NotImplementedException();
 
-        public Data Clone() => new DataSet(new HashSet<object>(Value));
+        protected override object GetObject() => this;
 
-        public int CompareTo(Data other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Data Member(Data member)
+        public override Data Member(Data member)
         {
             return member switch {
                 String str => str.Value switch {
-                    "length" => new Number(Value.Count),
-                    _ => throw new NotSupportedException()
+                    "length" => new Number(value.Count),
+                    "all" => Checker.All(this),
+                    "any" => Checker.Any(this),
+                    _ => base.Member(member)
                 },
-                Number num => new String(Value[(int)num.Value].ToString()),
-                Array arr => null,
-                _ => throw new NotSupportedException()
+                _ => base.Member(member)
             };
         }
 
-        public Data Operate(Operator op, Data rhs)
+        public override Data Operate(Operator op, Data rhs)
         {
-            throw new NotImplementedException();
+            return rhs switch {
+                DataSet ds => op switch {
+                    Operator.Add => new DataSet(value.Concat(ds.value)),
+                    Operator.Subtract => new DataSet(value.Where(x => !ds.value.Contains(x))),
+                    _ => base.Operate(op, rhs)
+                },
+                _ => base.Operate(op, rhs)
+            };
         }
 
-        public bool Test(TestOperator op, Data rhs)
+        public override bool Test(TestOperator op, Data rhs)
         {
-            throw new NotImplementedException();
+            return op switch {
+                TestOperator.Contains => value.Contains(rhs),
+                _ => base.Test(op, rhs)
+            };
         }
 
-        public Data Unary(UnaryOp op)
+        public override IEnumerable<Data> Spread() => value.OrderBy(x => x);
+
+        public override bool Equals(Data other) => other is DataSet ds
+            && value.Count == ds.value.Count
+            && value.All(ds.value.Contains);
+
+        public override int GetHashCode() => value.OrderBy(x => x)
+            .Aggregate(typeof(DataSet).GetHashCode(), (x, data) => (x * 51) + data.GetHashCode());
+
+        protected override string GetString() => string.Join(",", value.OrderBy(x => x));
+
+        bool ICollection<Data>.IsReadOnly => true;
+        void ICollection<Data>.Add(Data item) => throw new NotSupportedException();
+        bool ICollection<Data>.Remove(Data item) => throw new NotSupportedException();
+        void ICollection<Data>.Clear() => throw new NotSupportedException();
+
+        public bool Contains(Data item) => value.Contains(item);
+
+        public void CopyTo(Data[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            value.CopyTo(array, arrayIndex);
         }
+
+        public IEnumerator<Data> GetEnumerator() => value.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => value.GetEnumerator();
     }
 
 
-    class DataMap : Data
+    class DataMap : Data, IDictionary<Data, Data>
     {
-        public T As<T>()
+        public override bool Serializable => true;
+        public DataMap(IEnumerable<KeyValuePair<Data, Data>> pairs)
         {
-            throw new NotImplementedException();
+            foreach (var pair in pairs) {
+                map[pair.Key] = pair.Value;
+            }
+        }
+        private readonly Dictionary<Data, Data> map = new Dictionary<Data, Data>();
+
+        public Data this[Data key] {
+            get => map[key];
+            set => map[key] = value;
         }
 
-        public Data Clone()
+        public ICollection<Data> Keys => map.Keys;
+        public ICollection<Data> Values => map.Values;
+        public int Count => map.Count;
+
+        bool ICollection<KeyValuePair<Data, Data>>.IsReadOnly => true;
+        void IDictionary<Data, Data>.Add(Data key, Data value) => throw new NotSupportedException();
+        void ICollection<KeyValuePair<Data, Data>>.Add(KeyValuePair<Data, Data> item) => throw new NotSupportedException();
+        void ICollection<KeyValuePair<Data, Data>>.Clear() => throw new NotSupportedException();
+        bool IDictionary<Data, Data>.Remove(Data key) => throw new NotSupportedException();
+        bool ICollection<KeyValuePair<Data, Data>>.Remove(KeyValuePair<Data, Data> item) => throw new NotSupportedException();
+
+        public bool Contains(KeyValuePair<Data, Data> item) => map.Contains(item);
+        public bool ContainsKey(Data key) => map.ContainsKey(key);
+        public void CopyTo(KeyValuePair<Data, Data>[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            ((ICollection<KeyValuePair<Data, Data>>)map).CopyTo(array, arrayIndex);
         }
 
-        public int CompareTo(Data other)
+        public override bool Equals(Data other)
         {
-            throw new NotImplementedException();
+            return other is DataMap dm && dm.Count == Count && map.All(dm.Contains);
         }
 
-        public Data Index(int index)
+        protected override string GetString() => "\n" + string.Join("\n", Keys.OrderBy(x => x).Select(x => $"{x} {this[x]}")) + "\n";
+
+        public IEnumerator<KeyValuePair<Data, Data>> GetEnumerator() => map.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => map.GetEnumerator();
+
+        public override Data Operate(Operator op, Data rhs)
         {
-            throw new NotImplementedException();
+            if (op == Operator.Add && rhs is DataMap dm) {
+                return new DataMap(map.Concat(dm.map));
+            }
+            return base.Operate(op, rhs);
         }
 
-        public Data Member(string name)
+        public override Data Member(Data member)
         {
-            throw new NotImplementedException();
+            if (map.TryGetValue(member, out var value)) {
+                return value;
+            } else {
+                throw new NotSupportedException($"Datamap does not contain a '{value}' key");
+            }
         }
 
-        public Data Member(Data member)
+        public override Mutator MutableMember(Data member)
         {
-            throw new NotImplementedException();
+            if (map.TryGetValue(member, out var value)) {
+                return new Entry(this, member);
+            } else {
+                throw new NotSupportedException($"Datamap does not contain a '{value}' key");
+            }
         }
 
-        public Data Operate(Operator op, Data rhs)
+        public override bool Test(TestOperator op, Data rhs)
         {
-            throw new NotImplementedException();
+            return op switch {
+                TestOperator.Contains => ContainsKey(rhs),
+                TestOperator.Matches => rhs switch {
+                    DataMap pattern => Count == pattern.Count && Keys.All(k => pattern.ContainsKey(k) && pattern[k].Test(op, this[k])),
+                    _ => base.Test(op, rhs)
+                },
+                _ => base.Test(op, rhs)
+            };
         }
 
-        public bool Test(TestOperator op, Data rhs)
+        class Entry : Mutator
         {
-            throw new NotImplementedException();
+            public Entry(DataMap parent, Data key)
+            {
+                this.parent = parent;
+                this.key = key;
+            }
+            private readonly DataMap parent;
+            private readonly Data key;
+            public Data Delete() => new DataMap(parent.map.Where(p => !p.Key.Equals(key)));
+            public Data Set(Data value) => new DataMap(parent.map.Concat(new []{ new KeyValuePair<Data, Data>(key, value) }));
         }
 
-        public Data Unary(UnaryOp op)
+        public bool TryGetValue(Data key, out Data value) => map.TryGetValue(key, out value);
+
+        protected override object GetObject() => this;
+    }
+
+    class CommandData : Data
+    {
+        public override bool Serializable => true;
+        public CommandData(Command value) => Value = value;
+        public CommandData(Changer value) => Value = value;
+        public CommandData(Renderable value) => Value = value;
+        public object Value { get; }
+        protected override object GetObject() => Value;
+        protected override string GetString() => $"[A {Value} command]";
+    }
+
+    class LambdaData : Data
+    {
+        public override bool Serializable => true;
+        public LambdaData(Filter value) => Value = value;
+        public object Value { get; }
+        protected override object GetObject() => Value;
+        protected override string GetString() => $"[A lambda]";
+    }
+
+    class Array : Data, IList<Data>
+    {
+        public override bool Serializable => true;
+        public Array(IEnumerable<Data> value) => this.value = value.ToArray();
+        protected override object GetObject() => this;
+
+        protected override string GetString() => string.Join(",", this);
+
+        private readonly Data[] value;
+
+        public int Count => value.Length;
+
+        bool ICollection<Data>.IsReadOnly => true;
+
+        public Data this[int index]
         {
-            throw new NotImplementedException();
+            get => value[index];
+            set => throw new NotSupportedException();
+        }
+
+        public override bool Equals(Data other) => other is Array a && value.SequenceEqual(a.value);
+
+        public IEnumerator<Data> GetEnumerator() => ((IEnumerable<Data>)value).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        class Index : Mutator
+        {
+            private readonly Array parent;
+            private readonly int idx;
+
+            public Index(Array parent, int idx)
+            {
+                this.parent = parent;
+                this.idx = idx;
+            }
+
+            public Data Delete() => new Array(parent.value.Where((_, i) => i != idx));
+            public Data Set(Data value) => new Array(parent.value.Select((o, i) => i == idx ? value : o));
+        }
+
+        public override Mutator MutableMember(Data member)
+        {
+            return member switch {
+                Number idx => idx.Value > value.Length ? throw new IndexOutOfRangeException() : new Index(this, (int)idx.Value - 1),
+                _ => base.MutableMember(member)
+            };
+        }
+
+        public override Data Operate(Operator op, Data rhs)
+        {
+            return rhs switch {
+                Array a => op switch {
+                    Operator.Add => new Array(value.Concat(a.value)),
+                    _ => base.Operate(op, rhs)
+                },
+                _ => base.Operate(op, rhs)
+            };
+        }
+
+        public override IEnumerable<Data> Spread() => value;
+
+        public override bool Test(TestOperator op, Data rhs)
+        {
+            return op switch {
+                TestOperator.Contains => Contains(rhs),
+                _ => base.Test(op, rhs)
+            };
+        }
+
+        public int IndexOf(Data item) => ((IList<Data>)value).IndexOf(item);
+        void IList<Data>.Insert(int index, Data item) => throw new NotSupportedException();
+        void IList<Data>.RemoveAt(int index) => throw new NotSupportedException();
+        void ICollection<Data>.Add(Data item) => throw new NotSupportedException();
+        void ICollection<Data>.Clear() => throw new NotSupportedException();
+        public bool Contains(Data item) => ((IList<Data>)value).Contains(item);
+        public void CopyTo(Data[] array, int arrayIndex) => value.CopyTo(array, arrayIndex);
+        bool ICollection<Data>.Remove(Data item) => throw new NotSupportedException();
+
+        public override Data Member(Data member)
+        {
+            return member switch {
+                Number idx => value[(int)idx.Value - 1],
+                String str => str.Value switch {
+                    "length" => new Number(value.Length),
+                    "last" => value[value.Length - 1],
+                    "all" => Checker.All(this),
+                    "any" => Checker.Any(this),
+                    _ => base.Member(member)
+                },
+                Array selector => new Array(
+                    selector.Select(x => value[(int)(x as Number ?? 
+                        throw new NotSupportedException("Selector must only contain numbers")
+                    ).Value])
+                ),
+                _ => base.Member(member)
+            };
+        }
+    }
+
+    class VariableToValue : Data
+    {
+        public override bool Serializable => false;
+        public VariableToValue(Mutable variable, Data value, bool usesIntoKeyword, Mutable toRemove)
+        {
+            Variable = variable;
+            Value = value;
+            UsesIntoKeyword = usesIntoKeyword;
+            ToRemove = toRemove;
+        }
+        public Mutable Variable { get; }
+        public Mutable ToRemove { get; }
+        public Data Value { get; }
+        public bool UsesIntoKeyword { get; }
+
+        protected override object GetObject() => new object();
+        protected override string GetString() => "a 'to' or 'into' expression";
+    }
+
+    class Color : Data
+    {
+        public override bool Serializable => true;
+        public Color(System.Drawing.Color value) => Value = value;
+        public System.Drawing.Color Value { get; }
+        protected override object GetObject() => Value;
+
+        public override Data Member(Data member)
+        {
+            if (member is String str) {
+                return str.Value switch {
+                    "r" => new Number(Value.R),
+                    "g" => new Number(Value.G),
+                    "b" => new Number(Value.B),
+                    "h" => new Number(Value.GetHue()),
+                    "s" => new Number(Value.GetSaturation()),
+                    "l" => new Number(Value.GetBrightness()),
+                    _ => base.Member(member)
+                };
+            }
+            return base.Member(member);
+        }
+
+        public override Data Operate(Operator op, Data rhs)
+        {
+            if (op == Operator.Add && rhs is Color c) {
+                return new Color(System.Drawing.Color.FromArgb(
+                    (Value.A + c.Value.A) / 2,
+                    (Value.R + c.Value.R) / 2,
+                    (Value.G + c.Value.G) / 2,
+                    (Value.B + c.Value.B) / 2
+                ));
+            }
+            return base.Operate(op, rhs);
+        }
+    }
+
+    interface Span
+    {
+        void Replace(Span other);
+        IEnumerable<Span> Chars { get; }
+        IEnumerable<Span> Lines { get; }
+        void AddText(string text);
+        void SetAttribute(object value);
+        Span AddSpan();
+        void Delete();
+        IEnumerable<Span> FindByContent(string text);
+        IEnumerable<Span> FindByAttribute(string name);
+        event Action OnClick;
+    }
+
+    class HookName : Data, IEnumerable<Span>
+    {
+        public override bool Serializable => false;
+        private readonly IEnumerable<Span> spans;
+        public HookName(string name) : this(new Span[0]) => Name = name.ToLowerInvariant();
+        public HookName(IEnumerable<Span> spans) => this.spans = spans;
+        public string Name { get; }
+        protected override object GetObject() => this;
+
+        public override int GetHashCode() => typeof(HookName).GetHashCode() ^ Name.GetHashCode();
+        public override bool Equals(Data other) => other is HookName hn && (Name == hn.Name || spans.SequenceEqual(hn.spans));
+
+        public override Data Member(Data member)
+        {
+            return member switch {
+                String str => str.Value switch {
+                    "chars" => new HookName(spans.SelectMany(x => x.Chars)),
+                    "links" => new HookName(spans.SelectMany(x => x.FindByAttribute("link"))),
+                    "lines" => new HookName(spans.SelectMany(x => x.Lines)),
+                    _ => base.Member(member)
+                },
+                Number num => new HookName(spans.Skip((int)num.Value - 1).Take(1)),
+                _ => base.Member(member)
+            };
+        }
+
+        public IEnumerator<Span> GetEnumerator() => spans.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => spans.GetEnumerator();
+
+        protected override string GetString()
+        {
+            if (Name == null) {
+                return "a complex hook name";
+            } else {
+                return $"?{Name}, (a hook name)";
+            }
         }
     }
 }
