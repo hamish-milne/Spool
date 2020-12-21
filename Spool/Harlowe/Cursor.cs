@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace Spool {
@@ -144,8 +146,24 @@ namespace Spool {
 
         public void WriteRaw(string markup)
         {
-            WriteText(markup);
-            // throw new NotImplementedException();
+            // TODO: Support HTML entities
+            var xr = XmlReader.Create(new StringReader(markup), new XmlReaderSettings {
+                ConformanceLevel = ConformanceLevel.Fragment
+            });
+            xr.MoveToContent();
+            XNode node;
+            while (!xr.EOF && (node = XNode.ReadFrom(xr)) != null)
+            {
+                if (current != null) {
+                    current.AddAfterSelf(node);
+                } else {
+                    parent.Add(node);
+                }
+                current = node;
+                if (node is XText text) {
+                    charIndex = text.Value.Length;
+                }
+            }
         }
 
         public void WriteText(string text)
