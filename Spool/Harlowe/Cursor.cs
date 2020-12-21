@@ -6,6 +6,11 @@ using System.Xml.Linq;
 
 namespace Spool
 {
+    public enum RenderFlags
+    {
+        None = 0,
+        CollapseWhitespace = (1 << 0)
+    }
     public interface Cursor
     {
         string ReadText();
@@ -134,6 +139,8 @@ namespace Spool
 
     public class XCursor : Cursor
     {
+        public delegate void ClickEvent();
+        public delegate void MouseInEvent();
         public XDocument Root { get; } = new XDocument(new XElement("tw-passage"));
         private XContainer parent;
         private XNode current;
@@ -220,16 +227,16 @@ namespace Spool
         public bool Advance()
         {
             charIndex = 0;
-            if (current != null) {
+            if (current is XContainer container) {
+                parent = container;
+                current = parent.FirstNode;
+            } else if (current != null) {
                 current = current.NextNode;
-            }
-            if (current == null) {
-                do {
-                    current = current.Parent;
-                    if (current == null) {
-                        return false;
-                    }
-                } while (current.NextNode == null);
+            } else if (parent.Parent == null) {
+                return false;
+            } else {
+                current = parent.NextNode;
+                parent = parent.Parent;
             }
             return true;
         }
@@ -278,7 +285,17 @@ namespace Spool
 
         public void SetEvent(string name, Action<Cursor> action)
         {
-            throw new NotImplementedException();
+            var cParent = parent;
+            switch (name) {
+                case "click":
+                    parent.AddAnnotation(new ClickEvent(() => {
+                        parent = cParent;
+                        current = cParent.FirstNode;
+                        charIndex = 0;
+                        action(this);
+                    }));
+                    break;
+            }
         }
     }
 }

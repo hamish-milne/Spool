@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 
 namespace Spool.Harlowe
 {
@@ -51,12 +50,20 @@ namespace Spool.Harlowe
         }
 
         public Expression It { get; set; }
-    }
 
-    public enum RenderFlags
-    {
-        None = 0,
-        CollapseWhitespace = (1 << 0)
+        public RenderFlags Flags { get; private set; }
+
+        public RenderFlags PushFlags(RenderFlags flags)
+        {
+            var prev = Flags;
+            Flags |= flags;
+            return prev;
+        }
+
+        public void PopFlags(RenderFlags flags)
+        {
+            Flags = flags;
+        }
     }
 
     public abstract class Renderable : Data

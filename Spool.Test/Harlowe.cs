@@ -25,9 +25,9 @@ namespace Spool.Test
 @"[[Go to the cellar->Cellar]] is a link that goes to a passage named ""Cellar"".
 [[Parachuting<-Jump]] is a link that goes to a passage named ""Parachuting"".
 [[Down the hatch]] is a link that goes to a passage named ""Down the hatch"".",
-@"<link href=""Cellar"">Go to the cellar</link> is a link that goes to a passage named ""Cellar"".
-<link href=""Parachuting"">Jump</link> is a link that goes to a passage named ""Parachuting"".
-<link href=""Down the hatch"">Down the hatch</link> is a link that goes to a passage named ""Down the hatch""."
+@"<a>Go to the cellar</a> is a link that goes to a passage named ""Cellar"".
+<a>Jump</a> is a link that goes to a passage named ""Parachuting"".
+<a>Down the hatch</a> is a link that goes to a passage named ""Down the hatch""."
             },
             // TODO: Fix 'lazy' right-links
 //             new [] {
@@ -36,7 +36,7 @@ namespace Spool.Test
 //             },
             new [] {
 @"[[A<-B<-C<-D<-E]]",
-@"<link href=""A"">B&lt;-C&lt;-D&lt;-E</link>"
+@"<a>B&lt;-C&lt;-D&lt;-E</a>"
             },
             // TODO: Allow more constructs within links
 //             new [] {
@@ -185,6 +185,17 @@ And this.</mark>"
   ----
      -----",
 @"<hr /><hr /><hr />"
+            },
+            new []
+            {
+@"{
+    This sentence
+    will be
+    (set: $event to true)
+    written on one line
+    with only single spaces.
+}",
+@"This sentence will be written on one line with only single spaces. "
             },
             new []
             {
@@ -345,7 +356,6 @@ lean"
 // TODO: Verbatim markup
 // TODO: Aligner, column
 // TODO: Heading
-// TODO: Collapsed whitespace
 // TODO: Escaped chars
 
 // TODO: Display (needs multiple passages)
@@ -357,8 +367,8 @@ lean"
         [MemberData(nameof(ExampleMarkup))]
         public void StaticMarkup(string input, string expected)
         {
-            // using var fs = File.Open("./out.txt", FileMode.Append);
-            // using var sw = new StreamWriter(fs){AutoFlush = true};
+            using var fs = File.Open("./out.txt", FileMode.Append);
+            using var sw = new StreamWriter(fs){AutoFlush = true};
             var passage = Lexico.Lexico.Parse<Block>(input
                 // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
                 // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}

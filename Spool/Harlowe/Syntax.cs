@@ -41,10 +41,11 @@ namespace Spool.Harlowe
 
             public override void Render(Context context)
             {
-                // TODO: Collapse whitespace flag
+                var state = context.PushFlags(RenderFlags.CollapseWhitespace);
                 foreach (var c in content.Items) {
                     c.Render(context);
                 }
+                context.PopFlags(state);
             }
         }
 
@@ -55,8 +56,9 @@ namespace Spool.Harlowe
 
             public override void Render(Context context)
             {
-                // TODO: Respect collapsed whitespace flag
-                context.Cursor.WriteText("\n");
+                if ((context.Flags & RenderFlags.CollapseWhitespace) == 0) {
+                    context.Cursor.WriteText("\n");
+                }
             }
         }
 
@@ -396,11 +398,15 @@ namespace Spool.Harlowe
 
         class PlainText : Renderable
         {
-            [Regex(@"[^\]]((?!//)[^\|\(\[$_\]*'~\^])*")] public string Text { get; set; }
+            [Regex(@"[^\]\}]((?!//)[^\|\(\{\[$_\]\}*'~\^])*")] public string Text { get; set; }
 
             public override void Render(Context context)
             {
-                context.Cursor.WriteRaw(Text);
+                var text = Text;
+                if ((context.Flags & RenderFlags.CollapseWhitespace) != 0) {
+                    text = System.Text.RegularExpressions.Regex.Replace(Text, @"\s+", " ").TrimStart();
+                }
+                context.Cursor.WriteRaw(text);
             }
         }
 

@@ -42,37 +42,6 @@ namespace Spool.Harlowe
             }
         }
 
-        // [WhitespaceSeparated]
-        // class Each : TopExpression
-        // {
-        //     [Literal("each")] Unnamed _;
-        //     [Term] Variable variable;
-
-        //     public Data Evaluate(Context context)
-        //     {
-        //         return new LambdaData(value => {
-        //             variable.Set(context, value);
-        //             return true;
-        //         });
-        //     }
-        // }
-
-        // [WhitespaceSeparated]
-        // class Where : TopExpression
-        // {
-        //     [Term] Variable variable;
-        //     [Literal("where")] Unnamed _;
-        //     [Term] OperatorSequence expression;
-
-        //     public Data Evaluate(Context context)
-        //     {
-        //         return new LambdaData(value => {
-        //             variable.Set(context, value);
-        //             return ((Boolean)expression.Evaluate(context)).Value;
-        //         });
-        //     }
-        // }
-
         [WhitespaceSeparated]
         class ToOrInto : TopExpression
         {
