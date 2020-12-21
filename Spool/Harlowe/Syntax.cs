@@ -1,9 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
 using Lexico;
+using System.Text.RegularExpressions;
 
 namespace Spool.Harlowe
 {
@@ -24,7 +23,6 @@ namespace Spool.Harlowe
         {
             [Repeat(Min = 0), Alternative(
                 typeof(HorizontalRule),
-                typeof(NewLine),
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
                 typeof(Style),
@@ -48,20 +46,6 @@ namespace Spool.Harlowe
                 context.PopFlags(state);
             }
         }
-
-        class NewLine : Renderable
-        {
-            [Optional, Literal("\r")] Unnamed _;
-            [Literal("\n")] Unnamed __;
-
-            public override void Render(Context context)
-            {
-                if ((context.Flags & RenderFlags.CollapseWhitespace) == 0) {
-                    context.Cursor.WriteText("\n");
-                }
-            }
-        }
-
 
         [Sequence(CheckZeroLength = true)]
         class AppliedHook : Renderable
@@ -335,7 +319,6 @@ namespace Spool.Harlowe
                 [Not, IndirectLiteral(nameof(Op))] public Unnamed _;
 
                 [Alternative(
-                    typeof(NewLine),
                     typeof(CollapsedSpan),
                     typeof(AppliedHook),
                     typeof(Style),
@@ -403,8 +386,9 @@ namespace Spool.Harlowe
             public override void Render(Context context)
             {
                 var text = Text;
+                text = Regex.Replace(text, @"(\\\n)|(\n\\)", "");
                 if ((context.Flags & RenderFlags.CollapseWhitespace) != 0) {
-                    text = System.Text.RegularExpressions.Regex.Replace(Text, @"\s+", " ").TrimStart();
+                    text = Regex.Replace(text, @"\s+", " ").TrimStart();
                 }
                 context.Cursor.WriteRaw(text);
             }

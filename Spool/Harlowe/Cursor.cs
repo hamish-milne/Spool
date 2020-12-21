@@ -154,6 +154,11 @@ namespace Spool
 
         public void WriteRaw(string markup)
         {
+            // Markup consisting solely of whitespace is ignored by XmlReader
+            if (string.IsNullOrWhiteSpace(markup)) {
+                WriteText(markup);
+                return;
+            }
             // TODO: Support HTML entities
             var xr = XmlReader.Create(new StringReader(markup), new XmlReaderSettings {
                 ConformanceLevel = ConformanceLevel.Fragment

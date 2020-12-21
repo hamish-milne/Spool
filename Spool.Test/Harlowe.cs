@@ -199,6 +199,13 @@ And this.</mark>"
             },
             new []
             {
+@"This line \
+and this line
+\ and this line, are actually just one line.",
+@"This line and this line and this line, are actually just one line."
+            },
+            new []
+            {
 @"(set: $favouritefood to 'pizza')(set: $battlecry to ""Save a "" + $favouritefood + "" for me!"")$battlecry",
 @"Save a pizza for me!"
             },
