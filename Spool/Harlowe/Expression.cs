@@ -600,8 +600,6 @@ namespace Spool.Harlowe
                             return new CommandData(c);
                         } else if (ret is Command c1) {
                             return new CommandData(c1);
-                        } else if (ret is Renderable c2) {
-                            return new CommandData(c2);
                         } else if (ret == null) {
                             return null; // TODO: 'instant' sentinal?
                         } else {

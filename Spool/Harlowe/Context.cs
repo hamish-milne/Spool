@@ -31,6 +31,7 @@ namespace Spool.Harlowe
             // Cursor = passage;
             MacroProvider = new BuiltInMacros(this);
             Cursor = new XCursor();
+            Cursor.Reset();
         }
 
         public IDictionary<string, Data> Locals { get; } = new Dictionary<string, Data>();
@@ -131,6 +132,7 @@ namespace Spool.Harlowe
     public abstract class Renderable : Data
     {
         protected override object GetObject() => this;
+        protected override string GetString() => $"a {GetType().Name} renderable";
         public override bool Serializable => true;
         public abstract void Render(Context context);
     }

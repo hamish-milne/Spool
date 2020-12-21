@@ -73,7 +73,7 @@ namespace Spool.Harlowe
         public int CompareTo(Data other) => comparer.Compare(ToString(), other.ToString());
 
         private string cachedString;
-        protected virtual string GetString() => Object.ToString();
+        protected virtual string GetString() => Object == this ? throw new NotImplementedException("Please override GetString") : Object.ToString();
 
         public virtual bool Equals(Data other) => Object.Equals(other.Object);
         public override sealed bool Equals(object obj) => obj is Data d && Equals(d);
@@ -131,6 +131,7 @@ namespace Spool.Harlowe
 
         public override bool Equals(Data other) => other is Number num && num.Value == Value;
 
+        protected override string GetString() => Object.ToString();
         public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
@@ -165,6 +166,7 @@ namespace Spool.Harlowe
         }
 
         public override bool Equals(Data other) => other is Boolean b && b.Value == Value;
+        protected override string GetString() => Object.ToString();
         public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
@@ -232,6 +234,7 @@ namespace Spool.Harlowe
                 throw new NotSupportedException();
             };
         }
+        protected override string GetString() => Object.ToString();
         public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
@@ -449,7 +452,6 @@ namespace Spool.Harlowe
         public override bool Serializable => true;
         public CommandData(Command value) => Value = value;
         public CommandData(Changer value) => Value = value;
-        public CommandData(Renderable value) => Value = value;
         public object Value { get; }
         protected override object GetObject() => Value;
         protected override string GetString() => $"[A {Value} command]";

@@ -353,64 +353,64 @@ lean"
 // TODO: RNG check
 
 
-        // [Theory]
-        // [MemberData(nameof(ExampleMarkup))]
-        // public void StaticMarkup(string input, string expected)
-        // {
-        //     // using var fs = File.Open("./out.txt", FileMode.Append);
-        //     // using var sw = new StreamWriter(fs){AutoFlush = true};
-        //     var passage = Lexico.Lexico.Parse<Block>(input
-        //         // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
-        //         // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
-        //     );
-        //     var context = new Context();
-        //     passage.Render(context);
-        //     var actual = ((XCursor)context.Cursor).Root.Root.ToString(SaveOptions.DisableFormatting);
-        //     Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
-        // }
+        [Theory]
+        [MemberData(nameof(ExampleMarkup))]
+        public void StaticMarkup(string input, string expected)
+        {
+            // using var fs = File.Open("./out.txt", FileMode.Append);
+            // using var sw = new StreamWriter(fs){AutoFlush = true};
+            var passage = Lexico.Lexico.Parse<Block>(input
+                // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
+                // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
+            );
+            var context = new Context();
+            passage.Render(context);
+            var actual = ((XCursor)context.Cursor).Root.Root.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
+        }
 
         public static object[][] ExampleExpressions = {
             // TODO: HSL impl
-            // new []{"(1 + 2) / 0.25 + (3 + 2) * 0.2", "13"},
+            new []{"(1 + 2) / 0.25 + (3 + 2) * 0.2", "13"},
             // new []{"(hsl: 120, 0.8, 0.5)'s s", "0.8"},
             // new []{"(hsla: 28, 1, 0.4)'s h", "28"},
             new []{"(rgb: 255, 0, 47)'s b", "47"},
-            // new []{"(rgba: 90, 0, 0)'s r", "90"},
-            // new []{"(all-pass: _num where _num > 1 and _num < 14, 6, 8, 12, 10, 9)", "true"},
-            // new []{"(count: (a:1,2,3,2,1), 1, 2)", "4"},
-            // new []{"(count: 'Though', 'ugh','u','h')", "4"},
-            // new []{"(count: 'Though','ugh','h')", "3"},
-            // new []{"(count: 'Though','h') - (count: 'Though','ugh')", "1"},
-            // new []{"(datapairs: (dm:'B',24, 'A',25))", "(a: (dm: 'name', 'A', 'value', 25), (dm: 'name', 'B', 'value', 24))"},
-            // new []{"(datanames: (dm:'B','Y', 'A','X'))", "(a: 'A','B')"},
-            // new []{"(datavalues: (dm:'B',24, 'A',25))", "(a: 25,24)"},
-            // new []{"(find: _item where _item's 1st is 'A', 'Thorn', 'Apple', 'Cryptid', 'Anchor')", "(a: 'Apple', 'Anchor')"},
-            // new []{"(find: _num where (_num >= 12) and (it % 2 is 0), 9, 10, 11, 12, 13, 14, 15, 16)", "(a: 12, 14, 16)"},
-            // new []{"(interlaced: (a: 'A', 'B', 'C', 'D'), (a: 1, 2, 3))", "(a: 'A',1,'B',2,'C',3)"},
-            // new []{"(range:1,14)", "(a:1,2,3,4,5,6,7,8,9,10,11,12,13,14)"},
-            // new []{"(range:2,-2)", "(a:-2,-1,0,1,2)"},
-            // new []{"(dataset: ...(range:2,6))", "(dataset: 2,3,4,5,6)"},
-            // new []{"(repeated: 5, false)", "(a: false, false, false, false, false)"},
-            // new []{"(repeated: 3, 1,2,3)", "(a: 1,2,3,1,2,3,1,2,3)"},
-            // new []{"(reversed: 1,2,3,4)", "(a: 4,3,2,1)"},
-            // new []{"(rotated: 1, 'A','B','C','D')", "(a: 'D','A','B','C')"},
-            // new []{"(rotated: -2, 'A','B','C','D')", "(a: 'C','D','A','B')"},
-            // new []{"(sorted: 'A','C','E','G', 2, 1)", "(a: 1, 2, 'A', 'C', 'E', 'G')"},
+            new []{"(rgba: 90, 0, 0)'s r", "90"},
+            new []{"(all-pass: _num where _num > 1 and _num < 14, 6, 8, 12, 10, 9)", "true"},
+            new []{"(count: (a:1,2,3,2,1), 1, 2)", "4"},
+            new []{"(count: 'Though', 'ugh','u','h')", "4"},
+            new []{"(count: 'Though','ugh','h')", "3"},
+            new []{"(count: 'Though','h') - (count: 'Though','ugh')", "1"},
+            new []{"(datapairs: (dm:'B',24, 'A',25))", "(a: (dm: 'name', 'A', 'value', 25), (dm: 'name', 'B', 'value', 24))"},
+            new []{"(datanames: (dm:'B','Y', 'A','X'))", "(a: 'A','B')"},
+            new []{"(datavalues: (dm:'B',24, 'A',25))", "(a: 25,24)"},
+            new []{"(find: _item where _item's 1st is 'A', 'Thorn', 'Apple', 'Cryptid', 'Anchor')", "(a: 'Apple', 'Anchor')"},
+            new []{"(find: _num where (_num >= 12) and (it % 2 is 0), 9, 10, 11, 12, 13, 14, 15, 16)", "(a: 12, 14, 16)"},
+            new []{"(interlaced: (a: 'A', 'B', 'C', 'D'), (a: 1, 2, 3))", "(a: 'A',1,'B',2,'C',3)"},
+            new []{"(range:1,14)", "(a:1,2,3,4,5,6,7,8,9,10,11,12,13,14)"},
+            new []{"(range:2,-2)", "(a:-2,-1,0,1,2)"},
+            new []{"(dataset: ...(range:2,6))", "(dataset: 2,3,4,5,6)"},
+            new []{"(repeated: 5, false)", "(a: false, false, false, false, false)"},
+            new []{"(repeated: 3, 1,2,3)", "(a: 1,2,3,1,2,3,1,2,3)"},
+            new []{"(reversed: 1,2,3,4)", "(a: 4,3,2,1)"},
+            new []{"(rotated: 1, 'A','B','C','D')", "(a: 'D','A','B','C')"},
+            new []{"(rotated: -2, 'A','B','C','D')", "(a: 'C','D','A','B')"},
+            new []{"(sorted: 'A','C','E','G', 2, 1)", "(a: 1, 2, 'A', 'C', 'E', 'G')"},
         };
 
         [Theory]
         [MemberData(nameof(ExampleExpressions))]
         public void Assertions(string lhs, string rhs)
         {
-            using var fs = File.Open("./out.txt", FileMode.Append);
-            using var sw = new StreamWriter(fs){AutoFlush = true};
-            var trace = new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true};
+            // using var fs = File.Open("./out.txt", FileMode.Append);
+            // using var sw = new StreamWriter(fs){AutoFlush = true};
+            // var trace = new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true};
             // var trace = new Lexico.Test.XunitTrace(_outputHelper){Verbose = true};
             var expected = Expressions.Parse(rhs
                 // , trace
             ).Evaluate(new Context());
             var actual = Expressions.Parse(lhs
-                , trace
+                // , trace
             ).Evaluate(new Context());
             Assert.Equal(expected, actual);
         }

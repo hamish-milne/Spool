@@ -144,7 +144,8 @@ namespace Spool {
 
         public void WriteRaw(string markup)
         {
-            throw new NotImplementedException();
+            WriteText(markup);
+            // throw new NotImplementedException();
         }
 
         public void WriteText(string text)
@@ -154,6 +155,15 @@ namespace Spool {
                 charIndex += text.Length;
             } else if ((current?.PreviousNode ?? parent.LastNode) is XText tnode1) {
                 tnode1.Value += text;
+            } else {
+                var el = new XText(text);
+                if (current != null) {
+                    current.AddAfterSelf(el);
+                } else {
+                    parent.Add(el);
+                }
+                current = el;
+                charIndex = text.Length;
             }
         }
 

@@ -191,7 +191,7 @@ namespace Spool.Harlowe
                     {
                         // Otherwise, render the content of the final macro/variable:
                         var macroResult = changers.Last().Evaluate(context);
-                        if ((macroResult as CommandData)?.Object is Renderable r) {
+                        if (macroResult is Renderable r) {
                             renderHookBody = () => r.Render(context);
                         } else if (macroResult is String || macroResult is Number) {
                             renderHookBody = () => context.Cursor.WriteText(macroResult.ToString());
