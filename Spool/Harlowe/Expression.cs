@@ -432,7 +432,7 @@ namespace Spool.Harlowe
         {
             public abstract Data Evaluate(Context context);
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
                 var value = Evaluate(context);
                 if (value is Changer) {
@@ -444,7 +444,7 @@ namespace Spool.Harlowe
                 } else if (value is Renderable rnd) {
                     rnd.Render(context);
                 } else {
-                    context.AddText(value.ToString());
+                    context.Cursor.WriteText(value.ToString());
                 }
             }
         }
@@ -513,7 +513,7 @@ namespace Spool.Harlowe
                 //         current = next;
                 //     }
                 // }
-                return new HookName(Name);
+                return new SimpleHookName(Name);
             }
         }
 

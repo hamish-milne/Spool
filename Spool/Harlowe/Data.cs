@@ -2,6 +2,7 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using System.Xml.Linq;
 
 namespace Spool.Harlowe
 {
@@ -82,7 +83,7 @@ namespace Spool.Harlowe
         public abstract bool Serializable { get; }
     }
 
-    class Number : Data
+    class Number : Renderable
     {
         public override bool Serializable => true;
         public double Value { get; }
@@ -129,9 +130,11 @@ namespace Spool.Harlowe
         }
 
         public override bool Equals(Data other) => other is Number num && num.Value == Value;
+
+        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
-    class Boolean : Data
+    class Boolean : Renderable
     {
         public override bool Serializable => true;
         public static Boolean Get(bool value) => value ? True : False;
@@ -162,9 +165,10 @@ namespace Spool.Harlowe
         }
 
         public override bool Equals(Data other) => other is Boolean b && b.Value == Value;
+        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
-    class String : Data
+    class String : Renderable
     {
         public override bool Serializable => true;
         public String(string value)
@@ -228,6 +232,7 @@ namespace Spool.Harlowe
                 throw new NotSupportedException();
             };
         }
+        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
     class Checker : Data
@@ -614,56 +619,45 @@ namespace Spool.Harlowe
         }
     }
 
-    interface Span
-    {
-        void Replace(Span other);
-        IEnumerable<Span> Chars { get; }
-        IEnumerable<Span> Lines { get; }
-        void AddText(string text);
-        void SetAttribute(object value);
-        Span AddSpan();
-        void Delete();
-        IEnumerable<Span> FindByContent(string text);
-        IEnumerable<Span> FindByAttribute(string name);
-        event Action OnClick;
-    }
-
-    class HookName : Data, IEnumerable<Span>
+    abstract class HookName : Data, Selection
     {
         public override bool Serializable => false;
-        private readonly IEnumerable<Span> spans;
-        public HookName(string name) : this(new Span[0]) => Name = name.ToLowerInvariant();
-        public HookName(IEnumerable<Span> spans) => this.spans = spans;
-        public string Name { get; }
         protected override object GetObject() => this;
 
-        public override int GetHashCode() => typeof(HookName).GetHashCode() ^ Name.GetHashCode();
-        public override bool Equals(Data other) => other is HookName hn && (Name == hn.Name || spans.SequenceEqual(hn.spans));
+        // public override bool Equals(Data other) => other is HookName hn && this.SequenceEqual(hn);
 
         public override Data Member(Data member)
         {
             return member switch {
                 String str => str.Value switch {
-                    "chars" => new HookName(spans.SelectMany(x => x.Chars)),
-                    "links" => new HookName(spans.SelectMany(x => x.FindByAttribute("link"))),
-                    "lines" => new HookName(spans.SelectMany(x => x.Lines)),
+                    // "chars" => new HookName(spans.SelectMany(x => x.Chars)),
+                    // "links" => new HookName(spans.SelectMany(x => x.FindByAttribute("link"))),
+                    // "lines" => new HookName(spans.SelectMany(x => x.Lines)),
                     _ => base.Member(member)
                 },
-                Number num => new HookName(spans.Skip((int)num.Value - 1).Take(1)),
+                // Number num => new HookName(spans.Skip((int)num.Value - 1).Take(1)),
                 _ => base.Member(member)
             };
         }
 
-        public IEnumerator<Span> GetEnumerator() => spans.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => spans.GetEnumerator();
-
         protected override string GetString()
         {
-            if (Name == null) {
-                return "a complex hook name";
-            } else {
-                return $"?{Name}, (a hook name)";
-            }
+            return "a complex hook name";
+        }
+
+        public abstract Selector MakeSelector();
+    }
+
+    class SimpleHookName : HookName
+    {
+        public SimpleHookName(string name) => Name = name;
+        public string Name { get; }
+        private readonly Context context;
+
+        public override Selector MakeSelector() => new HookNameSelector();
+
+        protected override string GetString() {
+            return $"?{Name}, (a hook name)";
         }
     }
 }

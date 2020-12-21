@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using System.Linq;
 
 namespace Spool.Harlowe
@@ -85,7 +84,7 @@ namespace Spool.Harlowe
         {
             public Print(Data value) => Value = value;
             public Data Value { get; }
-            public void Render(Context context) => context.AddText(Value.ToString() ?? "NULL");
+            public override void Render(Context context) => context.Cursor.WriteText(Value.ToString() ?? "NULL");
         }
 
         public Renderable display(string passage) => Context.Passages[passage].Body;
@@ -98,81 +97,29 @@ namespace Spool.Harlowe
             public void Render(Context context, Action source) => source();
         }
 
-
-        class ReplaceHook : Command
+        class StyleChanger : Changer
         {
-            public Renderable Replacement { get; }
-            public IEnumerable<XContainer> Target { get; }
-            public void Run(Context context)
+            public StyleChanger(string Tag, string value)
             {
-                foreach (var node in Target)
-                {
-                    (XContainer, CursorPos) state;
-                    if (node.NextNode is XContainer nextNode) {
-                        state = context.Push(nextNode, CursorPos.Before);
-                    } else if (node.Parent != null) {
-                        state = context.Push(node.Parent, CursorPos.Child);
-                    } else {
-                        throw new InvalidOperationException();
-                    }
-                    node.Remove();
-                    Replacement.Render(context);
-                    context.Pop(state);
-                }
+                this.Tag = Tag;
+                Value = value;
             }
-        }
-
-        class ReplaceText : Command
-        {
-            public Renderable Replacement { get; }
-
-            public void Run(Context context)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public Changer font(string font) => new Font(font);
-
-        class Font : Changer
-        {
-            public Font(string fontName) => FontName = fontName;
-            public string FontName { get; }
+            public string Tag { get; }
+            public string Value { get; }
 
             public void Apply(ref bool? hidden, ref string name) {}
 
             public void Render(Context context, Action source)
             {
-                var el = new XElement(XName.Get("font"));
-                el.SetAttributeValue(XName.Get("value"), FontName);
-                context.AddNode(el);
-                var state = context.Push(el, CursorPos.Child);
+                context.Cursor.PushTag(Tag, Value);
                 source();
-                context.Pop(state);
+                context.Cursor.Pop();
             }
         }
 
-
-        public Changer textColour(string color) => new TextColor(color);
-        public Changer textColor(string color) => new TextColor(color);
-
-        class TextColor : Changer
-        {
-            public TextColor(string color) => Color = color;
-            public string Color { get; }
-
-            public void Apply(ref bool? hidden, ref string name) {}
-
-            public void Render(Context context, Action source)
-            {
-                var el = new XElement(XName.Get("color"));
-                el.SetAttributeValue(XName.Get("value"), Color);
-                context.AddNode(el);
-                var state = context.Push(el, CursorPos.Child);
-                source();
-                context.Pop(state);
-            }
-        }
+        public Changer font(string font) => new StyleChanger("font", font);
+        public Changer textColour(string color) => new StyleChanger("color", color);
+        public Changer textColor(string color) => new StyleChanger("color", color);
 
         public Changer @if(bool condition) => condition ? NullChanger.Instance : Hidden.Instance;
         public Changer unless(bool condition) => condition ? Hidden.Instance : NullChanger.Instance;
@@ -279,7 +226,6 @@ namespace Spool.Harlowe
             ));
         }
 
-        // TODO: Ordering
         public Array DataNames(DataMap map) => new Array(map.Keys.OrderBy(x => x));
         public Array DataValues(DataMap map) => new Array(map.OrderBy(p => p.Key).Select(p => p.Value));
 
@@ -326,60 +272,106 @@ namespace Spool.Harlowe
         
         // TODO: History
         // TODO: Passage
-        // TODO: Value semantics!! AAAAARGGH!
 
         // TODO: Bind, cycling-link
         // TODO: Bind, dropdown
 
-        public Changer link(string text) => linkReplace(text);
-        public Changer linkReplace(string text) => new LinkReplace(text);
-
-        class LinkReplace : Changer
+        abstract class LinkChanger : Changer
         {
-            public LinkReplace(string text)
+            public LinkChanger(string text)
             {
                 Text = text;
             }
 
             public string Text { get; }
 
+            protected abstract bool HasLinkStyle { get; }
+            protected virtual bool Repeat => false;
+            protected virtual bool RemoveLinkStyle => false;
+            protected virtual bool RemoveContent => false;
+
             public void Apply(ref bool? hidden, ref string name) => hidden = true;
 
             public void Render(Context context, Action source)
             {
-                var el = new XElement(XName.Get("link"));
-                el.SetAttributeValue(XName.Get("href"), "something here"); // TODO: Clicks
-                context.AddNode(el);
-                var state = context.Push(el, CursorPos.Child);
-                source();
-                context.Pop(state);
+                context.Cursor.PushTag("a", null);
+                context.Cursor.WriteText(Text);
+                context.Cursor.SetEvent("click", _ => {
+                    if (RemoveLinkStyle) {
+                        // TODO: Remove link style
+                        // context.Cursor.SetAttribute("link", null);
+                    }
+                    if (RemoveContent) {
+                        context.Cursor.DeleteAll();
+                    }
+                    source();
+                });
+                context.Cursor.Pop();
             }
+        }
+
+        public Changer link(string text) => linkReplace(text);
+        public Changer linkReplace(string text) => new LinkReplace(text);
+        class LinkReplace : LinkChanger
+        {
+            public LinkReplace(string text) : base(text) {}
+            protected override bool HasLinkStyle => true;
+            protected override bool RemoveContent => true;
         }
 
         public Changer linkReveal(string text) => new LinkReveal(text);
-
-        class LinkReveal : Changer
+        class LinkReveal : LinkChanger
         {
-            public LinkReveal(string text)
+            public LinkReveal(string text) : base(text) {}
+            protected override bool HasLinkStyle => true;
+            protected override bool RemoveLinkStyle => true;
+        }
+
+        public Changer linkRepeat(string text) => new LinkRepeat(text);
+        class LinkRepeat : LinkChanger
+        {
+            public LinkRepeat(string text) : base(text) {}
+            protected override bool HasLinkStyle => true;
+            protected override bool Repeat => true;
+        }
+
+        private class Revision : Changer
+        {
+            public Revision(HookName[] hooks, AdvanceType mode)
             {
-                Text = text;
+                throw new NotImplementedException();
+                // Target = target;
+                Mode = mode;
             }
-
-            public string Text { get; }
-
-            public void Apply(ref bool? hidden, ref string name) => hidden = true;
+            public Revision(string[] strings, AdvanceType mode)
+            {
+                throw new NotImplementedException();
+                // Target = target;
+                Mode = mode;
+            }
+            public Selection Target { get; }
+            public AdvanceType Mode { get; }
+            public void Apply(ref bool? hidden, ref string name) {}
 
             public void Render(Context context, Action source)
             {
-                var el = new XElement(XName.Get("link"));
-                el.SetAttributeValue(XName.Get("href"), "something here"); // TODO: Clicks
-                context.AddNode(el);
-                var state = context.Push(el, CursorPos.Child);
-                source();
-                context.Pop(state);
+                using (context.Cursor.Save())
+                {
+                    context.Cursor.Reset();
+                    var selector = Target.MakeSelector();
+                    while (selector.Advance(context.Cursor, Mode)) {
+                        source();
+                    }
+                }
             }
         }
-        
+
+        public Changer append(params HookName[] hooks) => new Revision(hooks, AdvanceType.Append);
+        public Changer append(params string[] strings) => new Revision(strings, AdvanceType.Append);
+        public Changer replace(params HookName[] hooks) => new Revision(hooks, AdvanceType.Replace);
+        public Changer replace(params string[] strings) => new Revision(strings, AdvanceType.Replace);
+        public Changer prepend(params HookName[] hooks) => new Revision(hooks, AdvanceType.Prepend);
+        public Changer prepend(params string[] strings) => new Revision(strings, AdvanceType.Prepend);
     }
 
     class NullChanger : Changer

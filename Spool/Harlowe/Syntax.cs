@@ -13,7 +13,7 @@ namespace Spool.Harlowe
 
         [Term] private ContentList content;
 
-        public void Render(Context context)
+        public override void Render(Context context)
         {
             foreach (var c in content.Items) {
                 c.Render(context);
@@ -39,7 +39,7 @@ namespace Spool.Harlowe
             [Pass, Cut] Unnamed _;
             [Term] ContentList content;
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
                 // TODO: Collapse whitespace flag
                 foreach (var c in content.Items) {
@@ -53,10 +53,10 @@ namespace Spool.Harlowe
             [Optional, Literal("\r")] Unnamed _;
             [Literal("\n")] Unnamed __;
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
                 // TODO: Respect collapsed whitespace flag
-                context.AddText("\n");
+                context.Cursor.WriteText("\n");
             }
         }
 
@@ -133,10 +133,10 @@ namespace Spool.Harlowe
                 public ShowHiddenHook(AppliedHook parent) => this.parent = parent;
                 private readonly AppliedHook parent;
 
-                public void Render(Context context) => parent.Render(context, true);
+                public override void Render(Context context) => parent.Render(context, true);
             }
 
-            public void Render(Context context) => Render(context, false);
+            public override void Render(Context context) => Render(context, false);
 
             public void Render(Context context, bool forceShow)
             {
@@ -174,9 +174,10 @@ namespace Spool.Harlowe
                 if (hidden == true && !forceShow) {
                     if (name != null)
                     {
-                        content = new XElement(XName.Get("hidden"));
-                        context.AddNode(content);
-                        context.Hidden.Add(content, new ShowHiddenHook(this));
+                        context.Cursor.PushTag("name", name);
+                        context.Cursor.Pop();
+                        // TODO: Show hidden
+                        // h.SetAttribute(new ShowHiddenHook(this));
                     }
                 } else {
                     Action renderHookBody;
@@ -193,7 +194,7 @@ namespace Spool.Harlowe
                         if ((macroResult as CommandData)?.Object is Renderable r) {
                             renderHookBody = () => r.Render(context);
                         } else if (macroResult is String || macroResult is Number) {
-                            renderHookBody = () => context.AddText(macroResult.ToString());
+                            renderHookBody = () => context.Cursor.WriteText(macroResult.ToString());
                         } else if ((macroResult as CommandData)?.Object is Command cmd) {
                             if (changerObjs.Count > 0) {
                                 throw new Exception("Changers cannot be applied to Commands");
@@ -212,14 +213,13 @@ namespace Spool.Harlowe
                     }
 
                     // Push a new state, and add the name tag to the inner content
+                    // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
                     Action initialRenderFn = () => {
                         var prevCond = context.NewCondition();
                         if (name != null) {
-                            content = new XElement(XName.Get("div"));
-                            context.AddNode(content);
-                            var state = context.Push(content, CursorPos.Child);
+                            context.Cursor.PushTag("name", name);
                             renderHookBody();
-                            context.Pop(state);
+                            context.Cursor.Pop();
                         } else {
                             renderHookBody();
                         }
@@ -233,25 +233,23 @@ namespace Spool.Harlowe
                     );
                     finalRenderFn();
                 }
-                // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
-                if (name != null) {
-                    content.SetAttributeValue(XName.Get("name"), name);
-                }
             }
         }
 
-        interface ChangerTarget : Renderable {}
+        abstract class ChangerTarget : Renderable {}
 
         abstract class LinkBase : ChangerTarget
         {
             public abstract string Link { get; }
             public abstract string Text { get; }
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
-                var el = new XElement(XName.Get("link"), new XText(Text));
-                el.SetAttributeValue(XName.Get("href"), Link);
-                context.AddNode(el);
+                context.Cursor.PushTag("a", null);
+                // TODO: Passage target OnClick
+                context.Cursor.WriteText(Text);
+                context.Cursor.SetEvent("click", _ => throw new NotImplementedException("Go to passage"));
+                context.Cursor.Pop();
             }
         }
 
@@ -291,7 +289,7 @@ namespace Spool.Harlowe
         {
             public abstract List<Renderable> GetContent();
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
                 foreach (var c in GetContent()) {
                     c.Render(context);
@@ -319,7 +317,6 @@ namespace Spool.Harlowe
 
         abstract class Style : Renderable
         {
-            public abstract void Render(Context context);
             public abstract string Op { get; }
         }
 
@@ -345,63 +342,61 @@ namespace Spool.Harlowe
             [Term] protected List<Item> inner;
             [IndirectLiteral(nameof(Op))] protected Unnamed suffix;
 
-            protected abstract XName Tag { get; }
+            protected abstract string Tag { get; }
 
             public override void Render(Context context)
             {
-                var el = new XElement(Tag);
-                context.AddNode(el);
-                var state = context.Push(el, CursorPos.Child);
+                context.Cursor.PushTag(Tag, null);
                 foreach (var c in inner) {
                     c.item.Render(context);
                 }
-                context.Pop(state);
+                context.Cursor.Pop();
             }
         }
 
         class Italics : Style<Italics>
         {
             public override string Op => "//";
-            protected override XName Tag => XName.Get("i");
+            protected override string Tag => "i";
         }
 
         class Bold : Style<Bold>
         {
             public override string Op => "''";
-            protected override XName Tag => XName.Get("b");
+            protected override string Tag => "b";
         }
 
         class Strikethrough : Style<Strikethrough>
         {
             public override string Op => "~~";
-            protected override XName Tag => XName.Get("s");
+            protected override string Tag => "s";
         }
 
         class Emphasis : Style<Emphasis>
         {
             public override string Op => "*";
-            protected override XName Tag => XName.Get("em");
+            protected override string Tag => "em";
         }
 
         class Strong : Style<Strong>
         {
             public override string Op => "**";
-            protected override XName Tag => XName.Get("strong");
+            protected override string Tag => "strong";
         }
 
         class Superscript : Style<Superscript>
         {
             public override string Op => "^^";
-            protected override XName Tag => XName.Get("sup");
+            protected override string Tag => "sup";
         }
 
         class PlainText : Renderable
         {
             [Regex(@"[^\]]((?!//)[^\|\(\[$_\]*'~\^])*")] public string Text { get; set; }
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
-                context.AddText(Text);
+                context.Cursor.WriteRaw(Text);
             }
         }
 
@@ -411,9 +406,10 @@ namespace Spool.Harlowe
             [WhitespaceSurrounded, CharSet("-"), Repeat(Min = 3)] string __;
             [LookAhead, EOL] Unnamed ___;
 
-            public void Render(Context context)
+            public override void Render(Context context)
             {
-                context.AddNode(new XElement(XName.Get("hr")));
+                context.Cursor.PushTag("hr", null);
+                context.Cursor.Pop();
             }
         }
 
