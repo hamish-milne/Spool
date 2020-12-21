@@ -374,14 +374,15 @@ lean"
         [MemberData(nameof(ExampleMarkup))]
         public void StaticMarkup(string input, string expected)
         {
-            using var fs = File.Open("./out.txt", FileMode.Append);
-            using var sw = new StreamWriter(fs){AutoFlush = true};
-            var passage = Lexico.Lexico.Parse<Block>(input
+            // using var fs = File.Open("./out.txt", FileMode.Append);
+            // using var sw = new StreamWriter(fs){AutoFlush = true};
+            var body = Lexico.Lexico.Parse<Block>(input
                 // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
                 // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
             );
             var context = new Context();
-            passage.Render(context);
+            context.AddPassage("Start", body);
+            context.GoTo("Start");
             var actual = ((XCursor)context.Cursor).Root.Root.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
         }
@@ -430,6 +431,19 @@ lean"
                 // , trace
             ).Evaluate(new Context());
             Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void PassageLinkClick()
+        {
+            var context = new Context();
+            var screen = ((XCursor)context.Cursor).Root.Root;
+            context.AddPassage("Passage 1", Lexico.Lexico.Parse<Block>("[[Text->Passage 2]]"));
+            context.AddPassage("Passage 2", Lexico.Lexico.Parse<Block>("More text"));
+            context.GoTo("Passage 1");
+            screen.Element(XName.Get("a")).Annotation<XCursor.ClickEvent>().Invoke();
+            var actual = screen.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal($"<tw-passage>More text</tw-passage>", actual);
         }
 
         private readonly ITestOutputHelper _outputHelper;

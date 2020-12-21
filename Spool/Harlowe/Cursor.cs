@@ -284,7 +284,7 @@ namespace Spool
         public void Reset()
         {
             parent = Root.Root;
-            current = null;
+            current = parent.FirstNode;
             charIndex = 0;
         }
 

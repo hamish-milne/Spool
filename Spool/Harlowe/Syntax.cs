@@ -238,7 +238,7 @@ namespace Spool.Harlowe
                 context.Cursor.PushTag("a", null);
                 // TODO: Passage target OnClick
                 context.Cursor.WriteText(Text);
-                context.Cursor.SetEvent("click", _ => throw new NotImplementedException("Go to passage"));
+                context.Cursor.SetEvent("click", _ => context.GoTo(Link));
                 context.Cursor.Pop();
             }
         }
