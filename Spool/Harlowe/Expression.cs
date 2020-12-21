@@ -494,25 +494,6 @@ namespace Spool.Harlowe
             public Data Evaluate(Context context)
             {
                 // BuiltInNames.TryGetValue(Name, out var builtInName);
-                // var nameAttr = XName.Get("name");
-                // IEnumerable<XContainer> generator(XContainer root)
-                // {
-                //     var current = root.FirstNode;
-                //     while (current != null)
-                //     {
-                //         if (current is XElement el && (
-                //             el.Attribute(nameAttr)?.Value?.Equals(Name, StringComparison.OrdinalIgnoreCase) == true
-                //             || el.Name == builtInName)) {
-                //             yield return el;
-                //         }
-                //         var next = current.NextNode;
-                //         while (next == null && current != null) {
-                //             current = current.Parent;
-                //             next = current.NextNode;
-                //         }
-                //         current = next;
-                //     }
-                // }
                 return new SimpleHookName(Name);
             }
         }
@@ -596,10 +577,6 @@ namespace Spool.Harlowe
                         var ret = m.Invoke(context.MacroProvider, finalArgs);
                         if (ret is Data d) {
                             return d;
-                        } else if (ret is Changer c) {
-                            return new CommandData(c);
-                        } else if (ret is Command c1) {
-                            return new CommandData(c1);
                         } else if (ret == null) {
                             return null; // TODO: 'instant' sentinal?
                         } else {

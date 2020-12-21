@@ -141,9 +141,9 @@ $x[As is this text.]",
 @"[This hook is named 'opener']<opener|
 
 |s2>[This hook is named 's2']",
-@"<div name=""opener"">This hook is named 'opener'</div>
+@"<name value=""opener"">This hook is named 'opener'</name>
 
-<div name=""s2"">This hook is named 's2'</div>"
+<name value=""s2"">This hook is named 's2'</name>"
             },
             new [] {
 @"|visible>[This hook is visible when the passage loads.]
@@ -151,20 +151,20 @@ $x[As is this text.]",
 
 [My commanding officer - a war hero, and a charismatic face for the military.]<sight|
 [Privately, I despise the man. His vacuous boosterism makes a mockery of my sacrifices.](thoughts|",
-@"<div name=""visible"">This hook is visible when the passage loads.</div>
-<hidden name=""cloaked"" />
+@"<name value=""visible"">This hook is visible when the passage loads.</name>
+<name value=""cloaked"" />
 
-<div name=""sight"">My commanding officer - a war hero, and a charismatic face for the military.</div>
-<hidden name=""thoughts"" />"
+<name value=""sight"">My commanding officer - a war hero, and a charismatic face for the military.</name>
+<name value=""thoughts"" />"
             },
             new [] {
 @"|1>[=
 The rest of this passage is in a hook named ""1"".
 |2)[==
 This part is also in a hidden hook named ""2"".",
-@"<div name=""1"">
+@"<name value=""1"">
 The rest of this passage is in a hook named ""1"".
-<hidden name=""2"" /></div>"
+<name value=""2"" /></name>"
             },
             new []
             {
@@ -327,9 +327,9 @@ lean"
 // @"|ghost>[Awoo]
 // (enchant: ?ghost, (text-style:'outline'))
 // |ghost>[Ooooh]",
-// @"<outline><div name=""ghost"">Awoo</div></outline>
+// @"<outline><name value=""ghost"">Awoo</name></outline>
 
-// <outline><div name=""ghost"">Ooooh</div></outline>"
+// <outline><name value=""ghost"">Ooooh</name></outline>"
 //             },
         };
     

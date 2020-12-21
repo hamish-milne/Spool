@@ -83,7 +83,13 @@ namespace Spool.Harlowe
         public abstract bool Serializable { get; }
     }
 
-    class Number : Renderable
+    abstract class RenderableData : Renderable
+    {
+        protected override string GetString() => Object.ToString();
+        public override void Render(Context context) => context.Cursor.WriteText(ToString());
+    }
+
+    class Number : RenderableData
     {
         public override bool Serializable => true;
         public double Value { get; }
@@ -130,12 +136,9 @@ namespace Spool.Harlowe
         }
 
         public override bool Equals(Data other) => other is Number num && num.Value == Value;
-
-        protected override string GetString() => Object.ToString();
-        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
-    class Boolean : Renderable
+    class Boolean : RenderableData
     {
         public override bool Serializable => true;
         public static Boolean Get(bool value) => value ? True : False;
@@ -166,11 +169,9 @@ namespace Spool.Harlowe
         }
 
         public override bool Equals(Data other) => other is Boolean b && b.Value == Value;
-        protected override string GetString() => Object.ToString();
-        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
-    class String : Renderable
+    class String : RenderableData
     {
         public override bool Serializable => true;
         public String(string value)
@@ -234,8 +235,6 @@ namespace Spool.Harlowe
                 throw new NotSupportedException();
             };
         }
-        protected override string GetString() => Object.ToString();
-        public override void Render(Context context) => context.Cursor.WriteText(ToString());
     }
 
     class Checker : Data
@@ -272,7 +271,7 @@ namespace Spool.Harlowe
         protected override string GetString() => $"[the {Value.Name.ToString().ToLowerInvariant()} datatype]";
     }
 
-    class DataSet : Data, ICollection<Data>
+    class DataSet : RenderableData, ICollection<Data>
     {
         public override bool Serializable => true;
         public DataSet(IEnumerable<Data> value)
@@ -347,7 +346,7 @@ namespace Spool.Harlowe
     }
 
 
-    class DataMap : Data, IDictionary<Data, Data>
+    class DataMap : RenderableData, IDictionary<Data, Data>
     {
         public override bool Serializable => true;
         public DataMap(IEnumerable<KeyValuePair<Data, Data>> pairs)
@@ -447,16 +446,6 @@ namespace Spool.Harlowe
         protected override object GetObject() => this;
     }
 
-    class CommandData : Data
-    {
-        public override bool Serializable => true;
-        public CommandData(Command value) => Value = value;
-        public CommandData(Changer value) => Value = value;
-        public object Value { get; }
-        protected override object GetObject() => Value;
-        protected override string GetString() => $"[A {Value} command]";
-    }
-
     class LambdaData : Data
     {
         public override bool Serializable => true;
@@ -466,7 +455,7 @@ namespace Spool.Harlowe
         protected override string GetString() => $"[A lambda]";
     }
 
-    class Array : Data, IList<Data>
+    class Array : RenderableData, IList<Data>
     {
         public override bool Serializable => true;
         public Array(IEnumerable<Data> value) => this.value = value.ToArray();

@@ -1,20 +1,25 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Spool.Harlowe
 {
 
-    public interface Command
+    public abstract class Command : Data
     {
-        void Run(Context context);
+        public abstract void Run(Context context);
+        public override bool Serializable => true;
+        protected override object GetObject() => this;
+        protected override string GetString() => $"a ({GetType().Name}:) command";
     }
 
-    public interface Changer
+    public abstract class Changer : Data
     {
-        void Apply(ref bool? hidden, ref string name);
-        void Render(Context context, Action source);
+        public override bool Serializable => true;
+        protected override object GetObject() => this;
+        protected override string GetString() => $"a ({GetType().Name}:) changer";
+        public virtual void Apply(ref bool? hidden, ref string name) {}
+        public abstract void Render(Context context, Action source);
     }
 
     class BuiltInMacros
@@ -84,7 +89,14 @@ namespace Spool.Harlowe
         {
             public Print(Data value) => Value = value;
             public Data Value { get; }
-            public override void Render(Context context) => context.Cursor.WriteText(Value.ToString() ?? "NULL");
+            public override void Render(Context context)
+            {
+                if (Value is Renderable r) {
+                    r.Render(context);
+                } else {
+                    context.Cursor.WriteText($"[{Value}]");
+                }
+            }
         }
 
         public Renderable display(string passage) => Context.Passages[passage].Body;
@@ -93,8 +105,8 @@ namespace Spool.Harlowe
         class Hidden : Changer
         {
             public static Hidden Instance { get; } = new Hidden();
-            public void Apply(ref bool? hidden, ref string name) => hidden = true;
-            public void Render(Context context, Action source) => source();
+            public override void Apply(ref bool? hidden, ref string name) => hidden = true;
+            public override void Render(Context context, Action source) => source();
         }
 
         class StyleChanger : Changer
@@ -107,9 +119,7 @@ namespace Spool.Harlowe
             public string Tag { get; }
             public string Value { get; }
 
-            public void Apply(ref bool? hidden, ref string name) {}
-
-            public void Render(Context context, Action source)
+            public override void Render(Context context, Action source)
             {
                 context.Cursor.PushTag(Tag, Value);
                 source();
@@ -139,9 +149,7 @@ namespace Spool.Harlowe
                 this.values = values;
             }
 
-            public void Apply(ref bool? hidden, ref string name) {}
-
-            public void Render(Context context, Action source)
+            public override void Render(Context context, Action source)
             {
                 foreach (var v in values) {
                     if (filter(v)) {
@@ -290,9 +298,9 @@ namespace Spool.Harlowe
             protected virtual bool RemoveLinkStyle => false;
             protected virtual bool RemoveContent => false;
 
-            public void Apply(ref bool? hidden, ref string name) => hidden = true;
+            public override void Apply(ref bool? hidden, ref string name) => hidden = true;
 
-            public void Render(Context context, Action source)
+            public override void Render(Context context, Action source)
             {
                 context.Cursor.PushTag("a", null);
                 context.Cursor.WriteText(Text);
@@ -351,9 +359,8 @@ namespace Spool.Harlowe
             }
             public Selection Target { get; }
             public AdvanceType Mode { get; }
-            public void Apply(ref bool? hidden, ref string name) {}
 
-            public void Render(Context context, Action source)
+            public override void Render(Context context, Action source)
             {
                 using (context.Cursor.Save())
                 {
@@ -377,7 +384,6 @@ namespace Spool.Harlowe
     class NullChanger : Changer
     {
         public static Changer Instance { get; } = new NullChanger();
-        public void Apply(ref bool? hidden, ref string name) {}
-        public void Render(Context context, Action source) => source();
+        public override void Render(Context context, Action source) => source();
     }
 }

@@ -78,7 +78,7 @@ namespace Spool.Harlowe
                 [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [CharSet(">)")] char hidden;
 
-                public void Apply(ref bool? hidden, ref string name)
+                public override void Apply(ref bool? hidden, ref string name)
                 {
                     if (name != null) {
                         throw new Exception("Hook already named");
@@ -89,7 +89,7 @@ namespace Spool.Harlowe
                     }
                 }
 
-                public void Render(Context context, Action source) => source();
+                public override void Render(Context context, Action source) => source();
             }
 
             [WhitespaceSeparated]
@@ -99,7 +99,7 @@ namespace Spool.Harlowe
                 [CharRange("az", "AZ", "09", "__"), Repeat] string name;
                 [Literal("|")] Unnamed _;
 
-                public void Apply(ref bool? hidden, ref string name)
+                public override void Apply(ref bool? hidden, ref string name)
                 {
                     if (name != null) {
                         throw new Exception("Hook already named");
@@ -110,7 +110,7 @@ namespace Spool.Harlowe
                     }
                 }
 
-                public void Render(Context context, Action source) => source();
+                public override void Render(Context context, Action source) => source();
             }
 
             [Alternative(
@@ -155,13 +155,15 @@ namespace Spool.Harlowe
                 bool? hidden = false;
                 changerObjs.AddRange(changerExprs.Select(x => {
                     var val = x.Evaluate(context);
-                    if ((val as CommandData)?.Object is Changer c) {
-                        return c;
-                    } else if (val is Boolean b) {
-                        hidden |= !b.Value;
-                        return NullChanger.Instance;
-                    } else {
-                        throw new Exception("Hook prefix must be a Changer or Boolean");
+                    switch (val)
+                    {
+                        case Changer c:
+                            return c;
+                        case Boolean b:
+                            hidden |= !b.Value;
+                            return NullChanger.Instance;
+                        default:
+                            throw new Exception("Hook prefix must be a Changer or Boolean");
                     }
                 }));
                 foreach (var c in changerObjs) {
@@ -170,7 +172,6 @@ namespace Spool.Harlowe
                 if (hidden != null) {
                     context.PreviousCondition = hidden;
                 }
-                XElement content = null;
                 if (hidden == true && !forceShow) {
                     if (name != null)
                     {
@@ -191,24 +192,27 @@ namespace Spool.Harlowe
                     {
                         // Otherwise, render the content of the final macro/variable:
                         var macroResult = changers.Last().Evaluate(context);
-                        if (macroResult is Renderable r) {
-                            renderHookBody = () => r.Render(context);
-                        } else if (macroResult is String || macroResult is Number) {
-                            renderHookBody = () => context.Cursor.WriteText(macroResult.ToString());
-                        } else if ((macroResult as CommandData)?.Object is Command cmd) {
-                            if (changerObjs.Count > 0) {
-                                throw new Exception("Changers cannot be applied to Commands");
-                            }
-                            cmd.Run(context);
-                            return;
-                        } else if (macroResult == null) {
-                            if (changerObjs.Count > 0) {
-                                throw new Exception("Changers cannot be applied to Instants");
-                            }
-                            // 'Instant' e.g. Set, Put
-                            return;
-                        } else {
-                            throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
+                        switch (macroResult)
+                        {
+                            case Renderable r:
+                                renderHookBody = () => r.Render(context);
+                                break;
+                            case Command cmd:
+                                if (changerObjs.Count > 0)
+                                {
+                                    throw new Exception("Changers cannot be applied to Commands");
+                                }
+                                cmd.Run(context);
+                                return;
+                            case null:
+                                // 'Instant' e.g. Set, Put
+                                if (changerObjs.Count > 0)
+                                {
+                                    throw new Exception("Changers cannot be applied to Instants");
+                                }
+                                return;
+                            default:
+                                throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
                         }
                     }
 

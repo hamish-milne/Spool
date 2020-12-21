@@ -4,7 +4,8 @@ using System.IO;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Spool {
+namespace Spool
+{
     public interface Cursor
     {
         string ReadText();
