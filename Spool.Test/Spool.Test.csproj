@@ -4,6 +4,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>lcov</CoverletOutputFormat>
+    <CoverletOutput>./TestResults/</CoverletOutput>
+    <Exclude>[Lexico*]*</Exclude>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,10 +18,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="1.3.0">
+    <PackageReference Include="coverlet.msbuild" Version="2.9.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- This needs to be manually lifted in here (transitive referencing the netstandard2.0 library is broken I guess) -->
+    <PackageReference Include="Microsoft.Xml.SgmlReader" Version="1.8.18" GeneratePathProperty="true" />
+    <Reference Include="SgmlReaderCore">
+      <HintPath>$(PkgMicrosoft_Xml_SgmlReader)\lib\netstandard2.0\SgmlReaderCore.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

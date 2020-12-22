@@ -45,9 +45,7 @@
             "type": "process",
             "args": [
                 "test",
-                "${workspaceFolder}/Spool.Test/Spool.Test.csproj",
-                "--collect:XPlat Code Coverage",
-                "--settings:${workspaceFolder}/Spool.Test/runsettings.xml"
+                "${workspaceFolder}/Spool.Test/Spool.Test.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
