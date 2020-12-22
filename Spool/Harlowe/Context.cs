@@ -1,73 +1,80 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Spool.Harlowe
 {
-
-    public class Passage
+    public class Language : Spool.Language
     {
-        public Passage(string name, Renderable body)
-        {
-            Name = name;
-            Body = body;
-        }
-        public string Name { get; }
-        public Renderable Body { get; }
-        public int Visits { get; }
+        public Spool.Context Run(Story story, Cursor output)
+            => new Context(story, output);
+
+        public bool Supports(string format, string version)
+            => format == "Harlowe" && version.CompareTo("3.1.0") <= 0;
     }
 
-    public class Context
+    public class Context : Spool.Context
     {
-        public Context()
+        public Context(Story story, Cursor output)
         {
-            // var story = new XElement(XName.Get("tw-story"));
-            // var passage = new XElement(XName.Get("tw-passage"));
-            // story.Add(passage);
-            // var sidebar = new XElement(XName.Get("tw-sidebar"));
-            // story.Add(sidebar);
-            // Screen.Add(story);
-            // Cursor = passage;
             MacroProvider = new BuiltInMacros(this);
-            Cursor = new XCursor();
-            Cursor.Reset();
+            Cursor = output;
+            Story = story;
         }
+
+        private readonly Dictionary<string, Renderable> passageBody = new Dictionary<string, Renderable>();
+        private readonly List<string> history = new List<string>();
 
         public IDictionary<string, Data> Locals { get; } = new Dictionary<string, Data>();
         public IDictionary<string, Data> Globals { get; } = new Dictionary<string, Data>();
-        public Passage Passage { get; set; }
-        public IDictionary<string, Passage> Passages { get; } = new Dictionary<string, Passage>();
+        public string CurrentPassage { get; private set; }
+        public Story Story { get; }
+        public Cursor Cursor { get; }
         public bool? PreviousCondition { get; set; }
         public object MacroProvider { get; }
         public Random Random { get; } = new Random();
-        public Cursor Cursor { get; }
 
-        public void AddPassage(string name, Renderable body)
-        {
-            Passages[name] = new Passage(name, body);
-        }
+        public IEnumerable<string> History => history;
+        public int Visits(string passage) => history.Count(x => x == passage);
 
         private bool isRendering;
 
+        public Renderable GetPassageBody(string passage)
+        {
+            if (!passageBody.TryGetValue(passage, out var body)) {
+                body = Lexico.Lexico.Parse<Block>(Story.GetPassage(passage));
+                passageBody.Add(passage, body);
+            }
+            return body;
+        }
+
         public void GoTo(string passage)
         {
-            Passage = Passages[passage];
+            // TODO: Does goto-self work?
+            if (passage == CurrentPassage) {
+                return;
+            }
+            history.Add(CurrentPassage);
+            CurrentPassage = passage;
             if (isRendering) {
                 return;
             }
             isRendering = true;
             try {
-                Passage currentPassage;
+                string previous;
                 // Loop here in case we did a (goto:) or similar
                 do {
-                    currentPassage = Passage;
+                    previous = CurrentPassage;
                     Cursor.Reset();
                     Cursor.DeleteAll();
-                    Passage.Body.Render(this);
-                } while (Passage != currentPassage);
+                    GetPassageBody(CurrentPassage).Render(this);
+                } while (CurrentPassage != previous);
             } finally {
                 isRendering = false;
             }
         }
+
+        public void Start() => GoTo(Story.Start);
 
         // TODO: Clean this up a bit
         public bool? NewCondition()
@@ -95,6 +102,16 @@ namespace Spool.Harlowe
         public void PopFlags(RenderFlags flags)
         {
             Flags = flags;
+        }
+
+        public string Save()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Load(string savestate)
+        {
+            throw new NotImplementedException();
         }
     }
 

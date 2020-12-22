@@ -629,7 +629,7 @@ namespace Spool.Harlowe
             {
                 unchecked {
                     return Text switch {
-                        "visit" => new Number(context.Passage.Visits),
+                        "visit" => new Number(context.Visits(context.CurrentPassage)),
                         _ => colors.TryGetValue(Text, out var c)
                             ? new Color(System.Drawing.Color.FromArgb((int)c))
                             : throw new Exception($"{Text} not defined")

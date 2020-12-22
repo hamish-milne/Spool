@@ -99,7 +99,7 @@ namespace Spool.Harlowe
             }
         }
 
-        public Renderable display(string passage) => Context.Passages[passage].Body;
+        public Renderable display(string passage) => Context.GetPassageBody(passage);
 
         public Changer hidden() => Hidden.Instance;
         class Hidden : Changer

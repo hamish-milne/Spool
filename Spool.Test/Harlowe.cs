@@ -4,12 +4,14 @@ using Xunit;
 using Spool.Harlowe;
 using System.Xml.Linq;
 using Xunit.Abstractions;
+using System.Collections.Generic;
+using System.Collections;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Spool.Test
 {
-    public class Harlowe
+    public class HarloweTests
     {
 
         public static object[][] ExampleMarkup = {
@@ -380,10 +382,12 @@ lean"
                 // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
                 // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
             );
-            var context = new Context();
-            context.AddPassage("Start", body);
-            context.GoTo("Start");
-            var actual = ((XCursor)context.Cursor).Root.Root.ToString(SaveOptions.DisableFormatting);
+            var cursor = new XCursor();
+            var context = new Harlowe.Context(new ListStory {
+                {"Test", input}
+            }, cursor);
+            context.GoTo("Test");
+            var actual = cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
         }
 
@@ -426,20 +430,36 @@ lean"
             // var trace = new Lexico.Test.XunitTrace(_outputHelper){Verbose = true};
             var expected = Expressions.Parse(rhs
                 // , trace
-            ).Evaluate(new Context());
+            ).Evaluate(new Harlowe.Context(new ListStory(), new XCursor()));
             var actual = Expressions.Parse(lhs
                 // , trace
-            ).Evaluate(new Context());
+            ).Evaluate(new Harlowe.Context(new ListStory(), new XCursor()));
             Assert.Equal(expected, actual);
+        }
+
+        class ListStory : Story, IEnumerable<KeyValuePair<string, string>>
+        {
+            public Dictionary<string, string> Passages { get; } = new Dictionary<string, string>();
+            public IEnumerable<string> PassageNames => Passages.Keys;
+            public string Start => throw new NotImplementedException();
+            public bool CheckPassageTag(string passage, string tag) => false;
+            public string GetPassage(string name) => Passages[name];
+            public (int, int) GetPassagePosition(string name) => (0, 0);
+            public Context Run(Cursor output) => throw new NotImplementedException();
+            public void Add(string name, string body) => Passages.Add(name, body);
+            public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => Passages.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Passages.GetEnumerator();
         }
 
         [Fact]
         public void PassageLinkClick()
         {
-            var context = new Context();
-            var screen = ((XCursor)context.Cursor).Root.Root;
-            context.AddPassage("Passage 1", Lexico.Lexico.Parse<Block>("[[Text->Passage 2]]"));
-            context.AddPassage("Passage 2", Lexico.Lexico.Parse<Block>("More text"));
+            var cursor = new XCursor();
+            var context = new Harlowe.Context(new ListStory {
+                {"Passage 1", "[[Text->Passage 2]]"},
+                {"Passage 2", "More text"}
+            }, cursor);
+            var screen = cursor.Root.Root;
             context.GoTo("Passage 1");
             screen.Element(XName.Get("a")).Annotation<XCursor.ClickEvent>().Invoke();
             var actual = screen.ToString(SaveOptions.DisableFormatting);
@@ -447,6 +467,6 @@ lean"
         }
 
         private readonly ITestOutputHelper _outputHelper;
-        public Harlowe(ITestOutputHelper outputHelper) => _outputHelper = outputHelper;
+        public HarloweTests(ITestOutputHelper outputHelper) => _outputHelper = outputHelper;
     }
 }

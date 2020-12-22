@@ -37,6 +37,19 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "group": "test",
+            "label": "test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "test",
+                "${workspaceFolder}/Spool.Test/Spool.Test.csproj",
+                "--collect:XPlat Code Coverage",
+                "--settings:${workspaceFolder}/Spool.Test/runsettings.xml"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }
