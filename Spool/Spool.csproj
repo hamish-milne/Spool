@@ -4,6 +4,10 @@
     <ProjectReference Include="..\Lexico\Lexico\Lexico.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Xml.SgmlReader" Version="1.8.18" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>netstandard2.0</TargetFramework>

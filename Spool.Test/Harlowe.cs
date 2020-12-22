@@ -466,6 +466,21 @@ lean"
             Assert.Equal($"<tw-passage>More text</tw-passage>", actual);
         }
 
+        [Fact]
+        public void TestHtmlStory()
+        {
+            var story = new HtmlStory(new StreamReader("../../../Spool test.html"));
+            var cursor = new XCursor();
+            var context = story.Run(cursor);
+            context.Start();
+            string Eval() => cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal("<tw-passage>Some text <a>Passage 2</a></tw-passage>", Eval());
+            cursor.Root.Root.Element(XName.Get("a")).Annotation<XCursor.ClickEvent>().Invoke();
+            Assert.Equal("<tw-passage>More text</tw-passage>", Eval());
+            Assert.True(story.CheckPassageTag("Passage 1", "bar"));
+            Assert.Equal(new []{"Passage 1", "Passage 2"}, story.PassageNames);
+        }
+
         private readonly ITestOutputHelper _outputHelper;
         public HarloweTests(ITestOutputHelper outputHelper) => _outputHelper = outputHelper;
     }

@@ -25,9 +25,15 @@ namespace Spool
 
         public HtmlStory(TextReader reader)
         {
-            using var xml = XmlReader.Create(reader);
-            var doc = (XDocument)XNode.ReadFrom(xml);
-            story = doc.Root.Element(XName.Get("body")).Element(XName.Get("tw-storydata"));
+            using var xml = new Sgml.SgmlReader {
+                DocType = "HTML",
+                WhitespaceHandling = WhitespaceHandling.All,
+                CaseFolding = Sgml.CaseFolding.ToLower,
+                InputStream = reader
+            };
+            xml.MoveToContent();
+            var doc = (XContainer)XNode.ReadFrom(xml);
+            story = doc.Element(XName.Get("body")).Element(XName.Get("tw-storydata"));
         }
 
         public string GetPassage(string name)
@@ -47,7 +53,7 @@ namespace Spool
         {
             var tags = story.Elements(XName.Get("tw-passagedata"))
                 .First(x => x.Attribute(XName.Get("name")).Value == passage)
-                .Attribute(XName.Get("tags")).Value.Split(',');
+                .Attribute(XName.Get("tags")).Value.Split(' ');
             return tags.Contains(tag);
         }
 
@@ -71,7 +77,7 @@ namespace Spool
         public string Start {
             get {
                 var start = story.Attribute(XName.Get("startnode")).Value;
-                return story.Elements()
+                return story.Elements(XName.Get("tw-passagedata"))
                     .First(x => x.Attribute(XName.Get("pid")).Value == start)
                     .Attribute(XName.Get("name")).Value;
             }
