@@ -144,7 +144,10 @@ namespace Spool
         public XDocument Root { get; } = new XDocument(new XElement("tw-passage"));
         private XContainer parent;
         private XNode current;
-        public int charIndex;
+        private int charIndex;
+
+        public XNode Current => current;
+        public XContainer Parent => parent;
 
         public string ReadText() => (current as XText)?.Value?.Substring(charIndex);
 
@@ -288,7 +291,7 @@ namespace Spool
             charIndex = 0;
         }
 
-        public void SetEvent(string name, Action<Cursor> action)
+        public virtual void SetEvent(string name, Action<Cursor> action)
         {
             var cParent = parent;
             switch (name) {

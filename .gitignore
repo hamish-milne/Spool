@@ -1,3 +1,5 @@
 bin
 obj
 **/TestResults/**
+Spool.Unity/Runtime/*.dll
+Spool.Unity/Runtime/*.pdb

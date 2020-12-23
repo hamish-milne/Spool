@@ -1,0 +1,74 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.0/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.0": {},
+    ".NETStandard,Version=v2.0/": {
+      "Spool/1.0.0": {
+        "dependencies": {
+          "Lexico": "1.0.0-alpha4",
+          "Microsoft.Xml.SgmlReader": "1.8.18",
+          "NETStandard.Library": "2.0.3"
+        },
+        "runtime": {
+          "Spool.dll": {}
+        }
+      },
+      "Microsoft.NETCore.Platforms/1.1.0": {},
+      "Microsoft.Xml.SgmlReader/1.8.18": {
+        "runtime": {
+          "lib/netstandard2.0/SgmlReaderCore.dll": {
+            "assemblyVersion": "1.8.18.0",
+            "fileVersion": "1.8.18.0"
+          }
+        }
+      },
+      "NETStandard.Library/2.0.3": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        }
+      },
+      "Lexico/1.0.0-alpha4": {
+        "runtime": {
+          "Lexico.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Spool/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.NETCore.Platforms/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
+      "path": "microsoft.netcore.platforms/1.1.0",
+      "hashPath": "microsoft.netcore.platforms.1.1.0.nupkg.sha512"
+    },
+    "Microsoft.Xml.SgmlReader/1.8.18": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-1Yh+bOUdT9n0DmjqwchHKQ4vHijHR28+RZ8ZSaZ/0PqWm7Q+JSGTd7ACbFcRYO3txP4ow6sIwUyXTbgKb/7cnw==",
+      "path": "microsoft.xml.sgmlreader/1.8.18",
+      "hashPath": "microsoft.xml.sgmlreader.1.8.18.nupkg.sha512"
+    },
+    "NETStandard.Library/2.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-st47PosZSHrjECdjeIzZQbzivYBJFv6P2nv4cj2ypdI204DO+vZ7l5raGMiX4eXMJ53RfOIg+/s4DHVZ54Nu2A==",
+      "path": "netstandard.library/2.0.3",
+      "hashPath": "netstandard.library.2.0.3.nupkg.sha512"
+    },
+    "Lexico/1.0.0-alpha4": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

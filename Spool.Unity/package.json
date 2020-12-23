@@ -1,0 +1,15 @@
+{
+  "name": "com.hmilne.spool",
+  "version": "0.0.1",
+  "displayName": "Spool",
+  "description": "A Twine importer and runtime",
+  "unity": "2020.1",
+  "author": {
+    "name": "Hamish Milne",
+    "email": "hamishmilne83@gmail.com"
+  },
+  "type": "library",
+  "dependencies": {
+    "com.unity.textmeshpro": ""
+  }
+}
