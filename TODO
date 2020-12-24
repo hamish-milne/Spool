@@ -185,9 +185,9 @@ Harlowe 3.1.0:
         Boolean:
             ✔ Literals @done(20-12-23 20:41)
             ✔ is @done(20-12-23 20:41)
-            ☐ and
-            ☐ or
-            ☐ not
+            ✔ and @done(20-12-24 00:42)
+            ✔ or @done(20-12-24 00:42)
+            ✔ not @done(20-12-24 00:42)
         Changer:
             ☐ +
         Colour:
@@ -224,8 +224,8 @@ Harlowe 3.1.0:
             ☐ +
         ☐ Instant
         Lambda:
-            ☐ each
-            ☐ where
+            ✔ each @done(20-12-24 00:41)
+            ✔ where @done(20-12-24 00:41)
             ☐ via
             ☐ making
             ☐ when
@@ -246,10 +246,11 @@ Harlowe 3.1.0:
         ☐ Error handling
         ☐ Header/footer
 Unity support:
-    ☐ Text Mesh Pro
-    ☐ UGUI Text
+    ✔ Text Mesh Pro @done(20-12-24 14:42)
+    ✔ UGUI Text @done(20-12-24 14:42)
+    ☐ Live updates
 Refactoring:
-    ☐ Rich Text cursor
+    ✔ Rich Text @done(20-12-24 14:12)
     ☐ Add special '->' expression for links
 Bugs and edge cases:
     ☐ Parsing should always be successful, even with errors

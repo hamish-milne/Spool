@@ -11,6 +11,22 @@ using System.Collections;
 
 namespace Spool.Test
 {
+
+    class ListStory : Story, IEnumerable<KeyValuePair<string, string>>
+    {
+        public Dictionary<string, string> Passages { get; } = new Dictionary<string, string>();
+        public IEnumerable<string> PassageNames => Passages.Keys;
+        public string Start => throw new NotImplementedException();
+        public bool CheckPassageTag(string passage, string tag) => false;
+        public string GetPassage(string name) => Passages[name];
+        public (int, int) GetPassagePosition(string name) => (0, 0);
+        public Context Run(Cursor output) => throw new NotImplementedException();
+        public void Add(string name, string body) => Passages.Add(name, body);
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => Passages.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => Passages.GetEnumerator();
+    }
+
+
     public class HarloweTests
     {
 
@@ -525,20 +541,6 @@ lean"
                 // , trace
             ).Evaluate(new Harlowe.Context(new ListStory(), new XCursor()));
             Assert.Equal(expected, actual);
-        }
-
-        class ListStory : Story, IEnumerable<KeyValuePair<string, string>>
-        {
-            public Dictionary<string, string> Passages { get; } = new Dictionary<string, string>();
-            public IEnumerable<string> PassageNames => Passages.Keys;
-            public string Start => throw new NotImplementedException();
-            public bool CheckPassageTag(string passage, string tag) => false;
-            public string GetPassage(string name) => Passages[name];
-            public (int, int) GetPassagePosition(string name) => (0, 0);
-            public Context Run(Cursor output) => throw new NotImplementedException();
-            public void Add(string name, string body) => Passages.Add(name, body);
-            public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => Passages.GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => Passages.GetEnumerator();
         }
 
         [Fact]
