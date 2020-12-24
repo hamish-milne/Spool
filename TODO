@@ -1,0 +1,266 @@
+Harlowe 3.1.0:
+    Syntax:
+        ✔ Right-links @done(20-12-23 16:51)
+        ✔ Left-links @done(20-12-23 16:51)
+        ☐ Markup within link text
+        ☐ Expressions within link text
+        ✔ Style markup @done(20-12-23 16:51)
+        ✔ Macros @done(20-12-23 16:52)
+        ✔ Changer application @done(20-12-23 16:52)
+        ✔ Variables @done(20-12-23 16:52)
+        ✔ Hooks @done(20-12-23 16:52)
+        ✔ Hidden hooks @done(20-12-23 16:52)
+        ✔ Named hooks @done(20-12-23 16:52)
+        ✔ Unclosed hooks @done(20-12-23 16:52)
+        ☐ Hook names
+        ✔ HTML markup @done(20-12-23 16:53)
+        ☐ Verbatim markup
+        ☐ Bulleted list
+        ☐ Numbered list
+        ☐ Aligner
+        ☐ Column
+        ☐ Heading
+        ✔ Horizontal rule @done(20-12-23 16:54)
+        ✔ Collapsing whitespace @done(20-12-23 16:54)
+        ✔ Escaped line break @done(20-12-23 16:54)
+        ✔ Operators @done(20-12-23 16:55)
+        ✔ Integer syntax (1st, 2nd) @done(20-12-23 17:08)
+        ☐ Range syntax (1stto3rd)
+    Built-in macros:
+        Basics:
+            ✔ set @done(20-12-23 16:55)
+            ✔ put @done(20-12-23 16:56)
+            ✔ move @done(20-12-23 17:56)
+            ✔ print @done(20-12-23 17:56)
+            ✔ display @done(20-12-23 18:05)
+            ✔ if @done(20-12-23 18:05)
+            ✔ unless @done(20-12-23 18:05)
+            ✔ else-if @done(20-12-23 18:05)
+            ✔ else @done(20-12-23 18:05)
+            ✔ for / loop @done(20-12-23 18:05)
+            ✔ either @done(20-12-23 18:27)
+            ✔ cond @done(20-12-23 18:05)
+            ✔ nth @done(20-12-23 18:05)
+            ☐ enchant
+        Colour:
+            ☐ gradient
+            ☐ hsl / hsla
+            ✔ rgb / rgba @done(20-12-23 18:05)
+        Data structure:
+            ✔ array / a @done(20-12-23 18:11)
+            ✔ datamap / dm @done(20-12-23 18:11)
+            ✔ dataset / ds @done(20-12-23 18:11)
+            ✔ all-pass @done(20-12-23 18:11)
+            ☐ altered
+            ✔ count @done(20-12-23 18:11)
+            ✔ dataentries @done(20-12-23 18:11)
+            ✔ datanames @done(20-12-23 18:11)
+            ✔ datavalues @done(20-12-23 18:11)
+            ✔ find @done(20-12-23 18:11)
+            ☐ folded
+            ✔ interlaced @done(20-12-23 18:12)
+            ✔ none-pass @done(20-12-23 19:45)
+            ✔ range @done(20-12-23 18:19)
+            ✔ repeated @done(20-12-23 18:19)
+            ✔ reversed @done(20-12-23 18:19)
+            ✔ rotated @done(20-12-23 18:19)
+            ✔ shuffled @done(20-12-23 19:45)
+            ✔ some-pass @done(20-12-23 18:30)
+            ✔ sorted @done(20-12-23 18:19)
+        Date and time:
+            ✔ current-date @done(20-12-23 18:19)
+            ✔ current-time @done(20-12-23 18:19)
+            ✔ monthday @done(20-12-23 18:19)
+            ✔ weekday @done(20-12-23 18:19)
+        Game state:
+            ☐ history
+            ☐ passage
+            ☐ passages
+        Input:
+            ☐ cycling-link
+            ☐ dropdown
+        Links:
+            ☐ link / link-replace
+            ☐ link-reveal
+            ☐ link-repeat
+            ☐ link-goto
+            ☐ link-reveal-goto
+            ☐ link-show
+            ☐ link-undo
+            ☐ click-[replace, append, prepend, goto]
+            ☐ mouseover-[replace, append, prepend, goto]
+            ☐ mouseout-[replace, append, prepend, goto]
+            ☐ go-to
+            ☐ undo
+        Live:
+            ☐ live
+            ☐ stop
+            ☐ event
+            ☐ more
+        Maths:
+            ☐ abs
+            ☐ cos
+            ☐ exp
+            ☐ log
+            ☐ log10
+            ☐ log2
+            ☐ max
+            ☐ min
+            ☐ pow
+            ☐ sign
+            ☐ sin
+            ☐ sqrt
+            ☐ tan
+        Number:
+            ☐ ceil
+            ☐ floor
+            ☐ num / number
+            ☐ random
+            ☐ round
+        Popup:
+            ☐ alert
+            ☐ confirm
+            ☐ prompt
+        Revision:
+            ☐ append
+            ☐ prepend
+            ☐ replace
+        Saving:
+            ☐ load-game
+            ☐ save-game
+            ☐ saved-games
+        Showing and hiding:
+            ☐ hidden
+            ☐ show
+        String:
+            ☐ lowercase
+            ☐ lowerfirst
+            ☐ str-repeated / string-repeated
+            ☐ str-reversed / string-reversed
+            ☐ str / string / text
+            ☐ uppercase
+            ☐ upperfirst
+            ☐ words
+        Styling:
+            ☐ align
+            ☐ background
+            ☐ css
+            ☐ font
+            ☐ hook
+            ☐ hover-style
+            ☐ text-colour / colour / text-color / color
+            ☐ text-rotate
+            ☐ text-style
+        Transitions:
+            ☐ transition / t8n
+            ☐ transition-time / t8n-time
+            ☐ transition-depart / t8n-depart
+            ☐ transition-arrive / t8n-arrive
+        URL:
+            ☐ goto-url
+            ☐ open-url
+            ☐ page-url
+            ☐ reload
+        Deprecated:
+            ☐ substring
+            ☐ subarray
+    Keywords:
+        ☐ exits
+        ☐ it
+        ☐ time
+        ☐ visits / visit
+    Datatypes:
+        Array:
+            ✔ Index @done(20-12-23 19:46)
+            ☐ Selection
+            ☐ Range
+            ✔ Contains @done(20-12-23 19:46)
+            ☐ any/all
+            ☐ matches
+            ✔ Spread @done(20-12-23 19:46)
+            ✔ is @done(20-12-23 19:46)
+            ✔ + @done(20-12-23 19:46)
+            ☐ -
+        ☐ Bind
+        Boolean:
+            ✔ Literals @done(20-12-23 20:41)
+            ✔ is @done(20-12-23 20:41)
+            ☐ and
+            ☐ or
+            ☐ not
+        Changer:
+            ☐ +
+        Colour:
+            ☐ Built-in names
+            ☐ #-syntax
+            ✔ r,g,b,h,s,l @done(20-12-23 20:41)
+            ☐ +
+        ☐ Command
+        Datamap:
+            ✔ Index @done(20-12-23 20:41)
+            ✔ is @done(20-12-23 20:41)
+            ✔ contains @done(20-12-23 20:41)
+            ✔ + @done(20-12-23 20:41)
+            ☐ matches
+        Dataset:
+            ☐ any / all / length
+            ✔ is @done(20-12-23 21:09)
+            ✔ contains @done(20-12-23 21:09)
+            ✔ + @done(20-12-23 21:09)
+            ☐ -
+            ✔ spread @done(20-12-23 21:09)
+            ☐ matches
+        ☐ Datatype
+        Gradient:
+            ☐ angle
+            ☐ stops
+        HookName:
+            ☐ chars
+            ☐ lines
+            ☐ links
+            ☐ Index
+            ☐ Range
+            ☐ Selector
+            ☐ +
+        ☐ Instant
+        Lambda:
+            ☐ each
+            ☐ where
+            ☐ via
+            ☐ making
+            ☐ when
+        Number:
+            ✔ Arithmetic operations @done(20-12-23 21:09)
+            ✔ Test operations @done(20-12-23 21:09)
+        String:
+            ✔ Index @done(20-12-24 00:37)
+            ☐ Range
+            ☐ Selector
+            ✔ + @done(20-12-24 00:37)
+            ✔ is @done(20-12-24 00:37)
+            ✔ contains @done(20-12-24 00:37)
+            ☐ any / all / length
+        ☐ VariableToValue
+    Features:
+        ☐ User-defined macros
+        ☐ Error handling
+        ☐ Header/footer
+Unity support:
+    ☐ Text Mesh Pro
+    ☐ UGUI Text
+Refactoring:
+    ☐ Rich Text cursor
+    ☐ Add special '->' expression for links
+Bugs and edge cases:
+    ☐ Parsing should always be successful, even with errors
+    ☐ Local variable scopes, inc.
+    ☐ Left-links left-associativity
+    ☐ Built-in hook names
+    ☐ Unclosed HTML markup
+    ☐ Line breaks in macro call syntax
+    ☐ Markup/macros in strings
+    ☐ Linking to passages that look like markup
+    ☐ Use SGML for parsing raw
+    ☐ #macro_* syntax
+    ☐ Gradients can be printed to make a <tw-colour>
+    ☐ (deprecated) hook names in (set:) and (put:)

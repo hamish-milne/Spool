@@ -219,6 +219,13 @@ namespace Spool.Harlowe
             protected override bool Swap => true;
             protected override string OpString => "is in";
         }
+        class IsNot : TestOperatorExpr
+        {
+            public override int Order => 80;
+            public override TestOperator OpCode => TestOperator.Is;
+            protected override bool Invert => true;
+            protected override string OpString => "is not";
+        }
         class Contains : TestOperatorExpr
         {
             public override int Order => 70;
@@ -230,13 +237,6 @@ namespace Spool.Harlowe
             public override int Order => 80;
             public override TestOperator OpCode => TestOperator.Is;
             protected override string OpString => "is";
-        }
-        class IsNot : TestOperatorExpr
-        {
-            public override int Order => 80;
-            public override TestOperator OpCode => TestOperator.Is;
-            protected override bool Invert => true;
-            protected override string OpString => "is not";
         }
         class Matches : TestOperatorExpr
         {

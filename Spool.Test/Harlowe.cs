@@ -360,17 +360,6 @@ lean"
 // TODO: Built-in names w/ enchant
 // TODO: Hidden open hook w/ click
 
-// TODO: List syntax (bullet, numbered)
-// TODO: data-raw attribute?
-// TODO: Verbatim markup
-// TODO: Aligner, column
-// TODO: Heading
-// TODO: Escaped chars
-
-// TODO: Display (needs multiple passages)
-
-// TODO: RNG check
-
 
         [Theory]
         [MemberData(nameof(ExampleMarkup))]
@@ -392,7 +381,6 @@ lean"
         }
 
         public static object[][] ExampleExpressions = {
-            // TODO: HSL impl
             new []{"(1 + 2) / 0.25 + (3 + 2) * 0.2", "13"},
             // new []{"(hsl: 120, 0.8, 0.5)'s s", "0.8"},
             // new []{"(hsla: 28, 1, 0.4)'s h", "28"},
@@ -418,6 +406,108 @@ lean"
             new []{"(rotated: 1, 'A','B','C','D')", "(a: 'D','A','B','C')"},
             new []{"(rotated: -2, 'A','B','C','D')", "(a: 'C','D','A','B')"},
             new []{"(sorted: 'A','C','E','G', 2, 1)", "(a: 1, 2, 'A', 'C', 'E', 'G')"},
+            new []{"(either: 'a', 'b', 'c') is in (a: 'a', 'b', 'c')", "true"},
+            new []{"(none-pass: _num where _num < 1 or _num > 14, 6, 8, 12, 10, 9)", "true"},
+            new []{"(some-pass: _num where _num < 1 or _num > 14, 6, 8, 12, 10, 9)", "false"},
+            new []{"(ds: ...(shuffled: 6,5,4,3,2,1))", "(ds: 1,2,3,4,5,6)"},
+
+            new []{"(a:1,2) is (a:1,2)", "true"},
+            new []{"(a:4,5) is not (a:5,4)", "true"},
+            new []{"(a:'Ape') contains 'Ape'", "true"},
+            new []{"(a:(a:99)) contains (a:99)", "true"},
+            new []{"(a:1,2) contains any of (a:2,3)", "true"},
+            new []{"(a:1,2) contains all of (a:1,2)", "true"},
+            new []{"'Ape' is in (a:'Ape')", "true"},
+            new []{"(a:99) is in (a:(a:99))", "true"},
+            new []{"any of (a:2,3) is in (a:1,2) is in", "true"},
+            new []{"all of (a:1,2) is in (a:1,2) is in", "true"},
+            new []{"(a:1,2) + (a:1,2)", "(a:1,2,1,2)"},
+            new []{"(a:1,1,2,3,4,5) - (a:1,2)", "(a:3,4,5)"},
+            new []{"(a: 0, ...(a:1,2,3,4), 5)", "(a:0,1,2,3,4,5)"},
+            new []{"(a:'Y','Z')'s 1st", "'Y'"},
+            new []{"(a:4,5)'s (2)", "5"},
+            new []{"(a:5,5,5)'s length", "3"},
+            new []{"1st of (a:'Y','O')", "'Y'"},
+            new []{"(2) of (a:'P','S')", "'S'"},
+            new []{"length of (a:5,5,5)", "3"},
+            new []{"(a:2,3) matches (a: num, num)", "true"},
+            new []{"(a: array) matches (a:(a:())", "true"},
+            new []{"(a:2,3) is an array", "true"},
+            new []{"(a:1,2)'s last", "2"},
+            new []{"1st of (a:1,2)", "1"},
+            new []{"(a:1,2,3,4,5)'s 2ndto5th", "(a:2,3,4,5)"},
+            new []{"all of (a:1,2) < 3", "true"},
+            new []{"(a:1,2,3)'s (a:1,-1)", "(a:1,3)"},
+
+            new []{"true is false", "false"},
+            new []{"false is false", "true"},
+            new []{"true is a boolean", "true"},
+
+            new []{"red", "#e61919"},
+            new []{"white", "#fff"},
+            new []{"black + white", "#777"},
+
+            new []{"(dm: 'goose', 'honk') + (dm: 'robot', 'whirr')", "(dm: \"goose\", \"honk\", \"robot\", \"whirr\")"},
+            new []{"(dm: \"dog\", \"woof\") + (dm: \"dog\", \"bark\")", "(dm: \"dog\", \"bark\")"},
+            new []{"(dm: 'HP', 5)", "(dm: 'HP', 5)"},
+            new []{"(dm: 'HP', 5) is not (dm: 'HP', 4)", "true"},
+            new []{"(dm: 'HP', 5) is not (dm: 'MP', 5)", "true"},
+            new []{"(dm: 'HP', 5) contains 'HP'", "true"},
+            new []{"(dm: 'HP', 5) contains 5", "false"},
+            new []{"'HP' is in (dm: 'HP', 5)", "true"},
+            new []{"(dm:'love',155)'s love", "155"},
+            new []{"love of (dm:'love',155)", "155"},
+            new []{"(dm:\"Love\",2,\"Fear\",4) matches (dm: \"Love\", num, \"Fear\", num)"},
+            
+            new []{"(ds:1,2)", "(ds:2,1)"},
+            new []{"(ds:5,4) is not (ds:5)", "true"},
+            new []{"(ds:'Ape') contains 'Ape'", "true"},
+            new []{"(ds:(ds:99)) contains (ds:99)", "true"},
+            new []{"(ds: 1,2,3) contains all of (a:2,3)", "true"},
+            new []{"(ds: 1,2,3) contains any of (a:3,4)", "true"},
+            new []{"'Ape' is in (ds:'Ape')", "true"},
+            new []{"(a:3,4) is in (ds:1,2,3,4)", "false"},
+            new []{"(ds:1,2,3) + (ds:1,2,4)", "(ds:1,2,3,4)"},
+            new []{"(ds:1,2,3) - (ds:1,3)", "(ds:2)"},
+            new []{"(a: 0, ...(ds:4,1,2,3), 5)", "(a: 0,1,2,3,4,5)"},
+            new []{"(ds:2,3) matches (a:3, num)", "true"},
+            new []{"(ds:2,3) is a dataset"},
+
+            new []{"(datamap:'a',2,'b',4) matches (datamap:'b',num,'a',num))", "true"},
+            new []{"(a: 2, 3, 4) matches (a: 2, num, num)", "true"},
+            new []{"(a: (a: 2), (a: 4)) matches (a: (a: num), (a: num))", "true"},
+
+            new []{"(gradient: 90, 0.2, blue, 0.8, white)'s stops", "(a:(dm: \"percent\", 0.2, \"colour\", blue), (dm: \"percent\", 0.8, \"colour\", white))"},
+
+            new []{"5 + 5", "10"},
+            new []{"5 - -5", "10"},
+            new []{"5 * 5", "25"},
+            new []{"5 / 5", "1"},
+            new []{"26 % 5", "1"},
+            new []{"4 > 3.75", "true"},
+            new []{"6 >= 1 + 5", "true"},
+            new []{"3 < 2 * 2", "true"},
+            new []{"65 <= 65", "true"},
+            new []{"2 is 2", "true"},
+            new []{"2 is not 0", "true"},
+
+            new []{"'A' + 'Z'", "'AZ'"},
+            new []{"'foo' is 'f'+'oo'", "true"},
+            new []{"any of 'Buxom' is 'x'", "true"},
+            new []{"all of 'Gadsby' is not 'e'", "true"},
+            new []{"'Fear' contains 'ear'", "true"},
+            new []{"'ugh' is in 'Through'", "true"},
+            new []{"'YO''s 1st", "'Y'"},
+            new []{"'PS''s (2)", "'S'"},
+            new []{"'ear''s (a:2,3)", "'ar'"},
+            new []{"1st of 'YO'", "'Y'"},
+            new []{"'Contract' matches str", "true"},
+            new []{"'Contract' is a str", "true"},
+            new []{"last of 'foobar'", "'r'"},
+            new []{"'aeiou''s 2ndto4th", "'eio'"},
+            new []{"'Penny''s length", "5"},
+            new []{"all of \"aeiou\" is not \"y\"", "true"},
+            new []{"'aeiou''s (a:1,-1)", "au"},
         };
 
         [Theory]
@@ -464,6 +554,19 @@ lean"
             screen.Element(XName.Get("a")).Annotation<XCursor.ClickEvent>().Invoke();
             var actual = screen.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<tw-passage>More text</tw-passage>", actual);
+        }
+
+        [Fact]
+        public void DisplayAnotherPassage()
+        {
+            var cursor = new XCursor();
+            var context = new Harlowe.Context(new ListStory {
+                {"Passage 1", "foo (display: 'Passage 2')"},
+                {"Passage 2", "bar"}
+            }, cursor);
+            context.GoTo("Passage 1");
+            var actual = cursor.Root.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal("<tw-passage>foo bar</tw-passage>", actual);
         }
 
         [Fact]
