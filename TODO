@@ -12,7 +12,7 @@ Harlowe 3.1.0:
         ✔ Hidden hooks @done(20-12-23 16:52)
         ✔ Named hooks @done(20-12-23 16:52)
         ✔ Unclosed hooks @done(20-12-23 16:52)
-        ☐ Hook names
+        ✔ Hook names @done(20-12-25 14:09)
         ✔ HTML markup @done(20-12-23 16:53)
         ☐ Verbatim markup
         ☐ Bulleted list
@@ -166,9 +166,9 @@ Harlowe 3.1.0:
             ☐ subarray
     Keywords:
         ☐ exits
-        ☐ it
+        ✔ it @done(20-12-25 14:09)
         ☐ time
-        ☐ visits / visit
+        ✔ visits / visit @done(20-12-25 14:09)
     Datatypes:
         Array:
             ✔ Index @done(20-12-23 19:46)
@@ -262,11 +262,11 @@ Bugs and edge cases:
     ☐ Line breaks in macro call syntax
     ☐ Markup/macros in strings
     ☐ Linking to passages that look like markup
-    ☐ Use SGML for parsing raw
+    ✔ Use SGML for parsing raw @done(20-12-25 14:09)
     ☐ #macro_* syntax
     ☐ Gradients can be printed to make a <tw-colour>
     ☐ (deprecated) hook names in (set:) and (put:)
 Admin:
     ☐ Unity icons
     ☐ Documentation
-    ☐ Structure
+    ✔ Structure @done(20-12-25 18:17)
