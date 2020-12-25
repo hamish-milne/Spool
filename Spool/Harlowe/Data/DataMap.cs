@@ -79,6 +79,9 @@ namespace Spool.Harlowe
 
         public override bool Test(TestOperator op, Data rhs)
         {
+            if (rhs is Checker) {
+                return base.Test(op, rhs);
+            }
             return op switch {
                 TestOperator.Contains => ContainsKey(rhs),
                 TestOperator.Matches => rhs switch {

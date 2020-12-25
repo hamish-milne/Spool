@@ -172,11 +172,11 @@ Harlowe 3.1.0:
     Datatypes:
         Array:
             ✔ Index @done(20-12-23 19:46)
-            ☐ Selection
+            ✔ Selection @done(20-12-25 22:41)
             ☐ Range
             ✔ Contains @done(20-12-23 19:46)
-            ☐ any/all
-            ☐ matches
+            ✔ any/all @done(20-12-25 22:42)
+            ✔ matches @done(20-12-25 22:42)
             ✔ Spread @done(20-12-23 19:46)
             ✔ is @done(20-12-23 19:46)
             ✔ + @done(20-12-23 19:46)
@@ -201,16 +201,16 @@ Harlowe 3.1.0:
             ✔ is @done(20-12-23 20:41)
             ✔ contains @done(20-12-23 20:41)
             ✔ + @done(20-12-23 20:41)
-            ☐ matches
+            ✔ matches @done(20-12-25 22:42)
         Dataset:
-            ☐ any / all / length
+            ✔ any / all / length @done(20-12-25 22:42)
             ✔ is @done(20-12-23 21:09)
             ✔ contains @done(20-12-23 21:09)
             ✔ + @done(20-12-23 21:09)
             ☐ -
             ✔ spread @done(20-12-23 21:09)
-            ☐ matches
-        ☐ Datatype
+            ✔ matches @done(20-12-25 22:42)
+        ✔ Datatype @done(20-12-25 19:37)
         Gradient:
             ☐ angle
             ☐ stops
@@ -235,12 +235,12 @@ Harlowe 3.1.0:
         String:
             ✔ Index @done(20-12-24 00:37)
             ☐ Range
-            ☐ Selector
+            ✔ Selector @done(20-12-25 22:42)
             ✔ + @done(20-12-24 00:37)
             ✔ is @done(20-12-24 00:37)
             ✔ contains @done(20-12-24 00:37)
-            ☐ any / all / length
-        ☐ VariableToValue
+            ✔ any / all / length @done(20-12-25 22:42)
+        ✔ VariableToValue @done(20-12-25 22:42)
     Features:
         ☐ User-defined macros
         ☐ Error handling
@@ -266,6 +266,7 @@ Bugs and edge cases:
     ☐ #macro_* syntax
     ☐ Gradients can be printed to make a <tw-colour>
     ☐ (deprecated) hook names in (set:) and (put:)
+    ☐ DataSet 'matches' behaviour
 Admin:
     ☐ Unity icons
     ☐ Documentation

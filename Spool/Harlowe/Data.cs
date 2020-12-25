@@ -48,6 +48,9 @@ namespace Spool.Harlowe
         public virtual Data Unary(UnaryOp op) => throw new NotSupportedException();
         public virtual bool Test(TestOperator op, Data rhs)
         {
+            if (rhs is Checker chk) {
+                return chk.TestSwapped(op, this);
+            }
             return op switch {
                 TestOperator.Is => Equals(rhs),
                 TestOperator.Matches => Equals(rhs) || (rhs is DataType && rhs.Test(TestOperator.IsOfType, this)),
@@ -79,32 +82,6 @@ namespace Spool.Harlowe
     {
         protected override string GetString() => Object.ToString();
         public override void Render(Context context) => context.Cursor.WriteText(ToString());
-    }
-
-    class Checker : Data
-    {
-        public override bool Serializable => false;
-        public Checker(Func<Data, bool> checker) => this.checker = checker;
-        private readonly Func<Data, bool> checker;
-
-        public override bool Test(TestOperator op, Data rhs)
-        {
-            if (op == TestOperator.Is) {
-                return checker(rhs);
-            } else {
-                throw new NotSupportedException();
-            }
-        }
-
-        protected override object GetObject() => checker;
-
-        private static Func<Data, bool> Check(IEnumerable<Data> list, Func<IEnumerable<Data>, Data, bool> checker)
-        {
-            return rhs => checker(list, rhs);
-        }
-
-        public static Checker All(IEnumerable<Data> list) => new Checker(rhs => list.All(x => x == rhs));
-        public static Checker Any(ICollection<Data> list) => new Checker(rhs => list.Contains(rhs));
     }
 
     class DataType : Data
