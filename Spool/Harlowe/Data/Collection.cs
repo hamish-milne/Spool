@@ -22,10 +22,23 @@ namespace Spool.Harlowe
 
         protected abstract Data Create(IEnumerable<Data> values);
 
+        private int NormalizeIndex(Number num)
+        {
+            var i = (int)num.Value;
+            if (i == 0) {
+                throw new NotSupportedException("You can't access elements at position 0");
+            }
+            if (i < 0) {
+                return Count + i;
+            } else {
+                return i - 1;
+            }
+        }
+
         public override Data Member(Data member)
         {
             return member switch {
-                Number idx => CheckIndexing(GetIndex((int)idx.Value - 1)),
+                Number idx => CheckIndexing(GetIndex(NormalizeIndex(idx))),
                 String str => str.Value switch {
                     "length" => new Number(Count),
                     "last" => CheckIndexing(GetIndex(Count - 1)),
@@ -34,9 +47,9 @@ namespace Spool.Harlowe
                     _ => base.Member(member)
                 },
                 Array selector => SupportsIndexing ? Create(
-                    selector.Select(x => GetIndex((int)(x as Number ?? 
+                    selector.Select(x => GetIndex(NormalizeIndex(x as Number ?? 
                         throw new NotSupportedException("Selector must only contain numbers")
-                    ).Value - 1))
+                    )))
                 ) : throw new NotSupportedException(),
                 _ => base.Member(member)
             };
