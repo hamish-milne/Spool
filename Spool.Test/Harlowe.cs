@@ -521,7 +521,7 @@ lean"
             new []{"(ds:1,2,3) - (ds:1,3)", "(ds:2)"},
             new []{"(a: 0, ...(ds:4,1,2,3), 5)", "(a: 0,1,2,3,4,5)"},
             new []{"(ds:2,3) matches (a:3, num)", "true"},
-            new []{"(ds:2,3) is a dataset"},
+            new []{"(ds:2,3) is a dataset", "true"},
 
             new []{"(datamap:'a',2,'b',4) matches (datamap:'b',num,'a',num))", "true"},
             new []{"(a: 2, 3, 4) matches (a: 2, num, num)", "true"},

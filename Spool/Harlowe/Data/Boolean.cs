@@ -2,6 +2,7 @@ namespace Spool.Harlowe
 {
     class Boolean : RenderableData
     {
+        public static DataType Type { get; } = new DataType(typeof(Boolean));
         public override bool Serializable => true;
         public static Boolean Get(bool value) => value ? True : False;
         public static Boolean True { get; } = new Boolean(true);

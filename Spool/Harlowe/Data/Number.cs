@@ -4,6 +4,7 @@ namespace Spool.Harlowe
 {
     class Number : RenderableData
     {
+        public static DataType Type { get; } = new DataType(typeof(Number));
         public override bool Serializable => true;
         public double Value { get; }
         protected override object GetObject() => Value;

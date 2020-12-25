@@ -25,21 +25,14 @@ namespace Spool.Harlowe
         Less,
         Greater,
         LessOrEqual,
-        GreaterOrEqual
+        GreaterOrEqual,
+        IsOfType,
     }
 
     public enum UnaryOp
     {
         Not,
         Minus,
-    }
-
-    static class DataExtensions
-    {
-        public static bool IsAn(this Data data, DataType type)
-        {
-            return data.GetType() == type.Value;
-        }
     }
 
     public interface Mutator
@@ -57,7 +50,7 @@ namespace Spool.Harlowe
         {
             return op switch {
                 TestOperator.Is => Equals(rhs),
-                TestOperator.Matches => Equals(rhs) || (rhs is DataType dt && this.IsAn(dt)),
+                TestOperator.Matches => Equals(rhs) || (rhs is DataType && rhs.Test(TestOperator.IsOfType, this)),
                 _ => throw new NotSupportedException()
             };
         }
@@ -116,10 +109,19 @@ namespace Spool.Harlowe
 
     class DataType : Data
     {
+        public DataType(Type value) => Value = value;
         public override bool Serializable => true;
         public Type Value { get; }
         protected override object GetObject() => Value;
         protected override string GetString() => $"[the {Value.Name.ToString().ToLowerInvariant()} datatype]";
+        public override bool Test(TestOperator op, Data rhs)
+        {
+            return op switch {
+                TestOperator.Matches => Value.IsInstanceOfType(rhs),
+                TestOperator.IsOfType => Value.IsInstanceOfType(rhs),
+                _ => base.Test(op, rhs)
+            };
+        }
     }
 
     class LambdaData : Data

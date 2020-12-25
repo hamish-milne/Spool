@@ -8,6 +8,7 @@ namespace Spool.Harlowe
 
     class DataSet : RenderableData, ICollection<Data>
     {
+        public static DataType Type { get; } = new DataType(typeof(DataSet));
         public override bool Serializable => true;
         public DataSet(IEnumerable<Data> value)
         {

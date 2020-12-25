@@ -8,6 +8,7 @@ namespace Spool.Harlowe
 
     class DataMap : RenderableData, IDictionary<Data, Data>
     {
+        public static DataType Type { get; } = new DataType(typeof(DataMap));
         public override bool Serializable => true;
         public DataMap(IEnumerable<KeyValuePair<Data, Data>> pairs)
         {

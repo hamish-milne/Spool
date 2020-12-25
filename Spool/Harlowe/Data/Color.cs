@@ -2,6 +2,7 @@ namespace Spool.Harlowe
 {
     class Color : Data
     {
+        public static DataType Type { get; } = new DataType(typeof(Color));
         public override bool Serializable => true;
         public Color(System.Drawing.Color value) => Value = value;
         public System.Drawing.Color Value { get; }

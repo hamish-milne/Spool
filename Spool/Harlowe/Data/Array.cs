@@ -7,6 +7,7 @@ namespace Spool.Harlowe
 {
     class Array : RenderableData, IList<Data>
     {
+        public static DataType Type { get; } = new DataType(typeof(Array));
         public override bool Serializable => true;
         public Array(IEnumerable<Data> value) => this.value = value.ToArray();
         protected override object GetObject() => this;

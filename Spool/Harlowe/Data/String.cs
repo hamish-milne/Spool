@@ -5,6 +5,7 @@ namespace Spool.Harlowe
 {
     class String : RenderableData
     {
+        public static DataType Type { get; } = new DataType(typeof(String));
         public override bool Serializable => true;
         public String(string value)
         {

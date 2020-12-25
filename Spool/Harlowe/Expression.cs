@@ -212,6 +212,20 @@ namespace Spool.Harlowe
             public override TestOperator OpCode => TestOperator.Greater;
             protected override string OpString => ">";
         }
+        class IsAn : TestOperatorExpr
+        {
+            public override int Order => 70;
+            protected override bool Swap => true;
+            public override TestOperator OpCode => TestOperator.IsOfType;
+            protected override string OpString => "is an";
+        }
+        class IsA : TestOperatorExpr
+        {
+            public override int Order => 70;
+            protected override bool Swap => true;
+            public override TestOperator OpCode => TestOperator.IsOfType;
+            protected override string OpString => "is a";
+        }
         class IsIn : TestOperatorExpr
         {
             public override int Order => 70;
@@ -629,6 +643,21 @@ namespace Spool.Harlowe
             {
                 unchecked {
                     return Text switch {
+                        "number" => Number.Type,
+                        "num" => Number.Type,
+                        "string" => String.Type,
+                        "str" => String.Type,
+                        "boolean" => Boolean.Type,
+                        "array" => Array.Type,
+                        "datamap" => DataMap.Type,
+                        "dm" => DataMap.Type,
+                        "dataset" => DataSet.Type,
+                        "ds" => DataSet.Type,
+                        "command" => Command.Type,
+                        "changer" => Changer.Type,
+                        "color" => Color.Type,
+                        "colour" => Color.Type,
+                        // "gradient" => Gradient.Type,
                         "visit" => new Number(context.Visits(context.CurrentPassage)),
                         _ => colors.TryGetValue(Text, out var c)
                             ? new Color(System.Drawing.Color.FromArgb((int)c))
