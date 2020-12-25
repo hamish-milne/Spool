@@ -122,9 +122,9 @@ Harlowe 3.1.0:
             ☐ confirm
             ☐ prompt
         Revision:
-            ☐ append
-            ☐ prepend
-            ☐ replace
+            ✔ append @done(20-12-25 01:21)
+            ✔ prepend @done(20-12-25 01:21)
+            ✔ replace @done(20-12-25 01:22)
         Saving:
             ☐ load-game
             ☐ save-game
@@ -253,6 +253,7 @@ Refactoring:
     ✔ Rich Text @done(20-12-24 14:12)
     ☐ Add special '->' expression for links
 Bugs and edge cases:
+    ✔ Correct string-based content selection behaviour @done(20-12-25 01:29)
     ☐ Parsing should always be successful, even with errors
     ☐ Local variable scopes, inc.
     ☐ Left-links left-associativity
@@ -265,3 +266,7 @@ Bugs and edge cases:
     ☐ #macro_* syntax
     ☐ Gradients can be printed to make a <tw-colour>
     ☐ (deprecated) hook names in (set:) and (put:)
+Admin:
+    ☐ Unity icons
+    ☐ Documentation
+    ☐ Structure

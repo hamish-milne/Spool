@@ -277,12 +277,6 @@ namespace Spool.Harlowe
         public String CurrentTime() => new String(DateTime.Now.ToString("hh:mm tt"));
         public Number MonthDay() => new Number(DateTime.Now.Day);
         public String WeekDay() => new String(DateTime.Now.DayOfWeek.ToString());
-        
-        // TODO: History
-        // TODO: Passage
-
-        // TODO: Bind, cycling-link
-        // TODO: Bind, dropdown
 
         abstract class LinkChanger : Changer
         {
@@ -347,14 +341,12 @@ namespace Spool.Harlowe
         {
             public Revision(HookName[] hooks, AdvanceType mode)
             {
-                throw new NotImplementedException();
-                // Target = target;
+                Target = CombinedSelector.Create(hooks);
                 Mode = mode;
             }
             public Revision(string[] strings, AdvanceType mode)
             {
-                throw new NotImplementedException();
-                // Target = target;
+                Target = new ContentSelector(strings);
                 Mode = mode;
             }
             public Selection Target { get; }

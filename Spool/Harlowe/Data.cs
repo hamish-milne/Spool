@@ -644,7 +644,7 @@ namespace Spool.Harlowe
         public string Name { get; }
         private readonly Context context;
 
-        public override Selector MakeSelector() => new HookNameSelector();
+        public override Selector MakeSelector() => new HookNameSelector(Name);
 
         protected override string GetString() {
             return $"?{Name}, (a hook name)";

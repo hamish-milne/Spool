@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -49,14 +50,15 @@ namespace Spool
 
     class HookNameSelector : Selection, Selector
     {
+        public HookNameSelector(string name) => Name = name;
         public string Name { get; }
         public bool Advance(Cursor cursor, AdvanceType type)
         {
-            do {
+            while (cursor.ReadTag() != "name" && cursor.ReadTagValue() != Name) {
                 if (!cursor.Advance()) {
                     return false;
                 }
-            } while (cursor.ReadTag() != "name" && cursor.ReadTagValue() != Name);
+            }
             cursor.Advance();
             switch (type) {
             case AdvanceType.Append:
@@ -74,7 +76,8 @@ namespace Spool
 
     class ContentSelector : Selection
     {
-        public string Text { get; }
+        public ContentSelector(IEnumerable<string> text) => this.text = text.ToArray();
+        private string[] text;
 
         public Selector MakeSelector() => new Inner(this);
 
@@ -82,30 +85,38 @@ namespace Spool
         {
             public Inner(ContentSelector parent) => this.parent = parent;
             private readonly ContentSelector parent;
-            private bool atTextStart;
+            private string atTextStart;
 
             public bool Advance(Cursor cursor, AdvanceType type)
             {
-                if (atTextStart) {
-                    cursor.Step(parent.Text.Length);
-                    atTextStart = false;
+                if (atTextStart != null) {
+                    cursor.Step(atTextStart.Length);
+                    atTextStart = null;
                 }
-                int index;
-                while ( (index = cursor.ReadText()?.IndexOf(parent.Text) ?? -1) < 0 ) {
-                    if (!cursor.Advance()) {
+                int index = 0;
+                string foundText = null;
+                while (foundText == null) {
+                    foreach (var text in parent.text) {
+                        index = cursor.ReadText()?.IndexOf(text) ?? -1;
+                        if (index >= 0) {
+                            foundText = text;
+                            break;
+                        }
+                    }
+                    if (foundText == null && !cursor.Advance()) {
                         return false;
                     }
                 }
                 cursor.Step(index);
                 switch (type) {
                 case AdvanceType.Append:
-                    cursor.Step(parent.Text.Length);
+                    cursor.Step(foundText.Length);
                     break;
                 case AdvanceType.Replace:
-                    cursor.DeleteChars(parent.Text.Length);
+                    cursor.DeleteChars(foundText.Length);
                     break;
                 case AdvanceType.Prepend:
-                    atTextStart = true;
+                    atTextStart = foundText;
                     break;
                 }
                 return true;
@@ -115,9 +126,20 @@ namespace Spool
 
     class CombinedSelector : Selection
     {
-        private readonly Selector[] arguments;
+        public static Selection Create(IEnumerable<Selection> arguments)
+        {
+            var argArray = arguments.ToArray();
+            if (argArray.Length == 1) {
+                return argArray[0];
+            }
+            return new CombinedSelector(argArray);
+        }
+        private CombinedSelector(Selection[] arguments) {
+            this.arguments = arguments;
+        }
+        private readonly Selection[] arguments;
 
-        public Selector MakeSelector() => new Inner(arguments);
+        public Selector MakeSelector() => new Inner(arguments.Select(x => x.MakeSelector()));
 
         private class Inner : Selector
         {
@@ -126,6 +148,9 @@ namespace Spool
 
             public bool Advance(Cursor cursor, AdvanceType type)
             {
+                if (index.Current == null) {
+                    index.MoveNext();
+                }
                 while (!index.Current.Advance(cursor, type)) {
                     if (index.MoveNext() == false) {
                         return false;
@@ -155,6 +180,33 @@ namespace Spool
 
         public string ReadTagValue() => (current as XElement)?.Attribute(XName.Get("value"))?.Value;
 
+        private void InsertNode(XNode node)
+        {
+            if (current is XText text) {
+                // Normalize cursor position - prevents creating empty text nodes
+                if (charIndex >= text.Value.Length) {
+                    current = current.NextNode;
+                    charIndex = 0;
+                }
+                if (node is XText text2) {
+                    WriteText(text2.Value);
+                    return;
+                } else if (charIndex > 0) {
+                    // Split text into two and put the new node in the middle
+                    var splitText = new XText(text.Value.Substring(charIndex));
+                    text.Value = text.Value.Substring(0, charIndex);
+                    text.AddAfterSelf(splitText);
+                    current = splitText;
+                    charIndex = 0;
+                }
+            }
+            if (current != null) {
+                current.AddBeforeSelf(node);
+            } else {
+                parent.Add(node);
+            }
+        }
+
         public void WriteRaw(string markup)
         {
             // Markup consisting solely of whitespace is ignored by XmlReader
@@ -170,15 +222,7 @@ namespace Spool
             XNode node;
             while (!xr.EOF && (node = XNode.ReadFrom(xr)) != null)
             {
-                if (current != null) {
-                    current.AddAfterSelf(node);
-                } else {
-                    parent.Add(node);
-                }
-                current = node;
-                if (node is XText text) {
-                    charIndex = text.Value.Length;
-                }
+                InsertNode(node);
             }
         }
 
@@ -190,14 +234,7 @@ namespace Spool
             } else if ((current?.PreviousNode ?? parent.LastNode) is XText tnode1) {
                 tnode1.Value += text;
             } else {
-                var el = new XText(text);
-                if (current != null) {
-                    current.AddAfterSelf(el);
-                } else {
-                    parent.Add(el);
-                }
-                current = el;
-                charIndex = text.Length;
+                InsertNode(new XText(text));
             }
         }
 
@@ -205,11 +242,7 @@ namespace Spool
         {
             var el = new XElement(XName.Get(tag));
             el.SetAttributeValue(XName.Get("value"), value);
-            if (current != null) {
-                current.AddAfterSelf(el);
-            } else {
-                parent.Add(el);
-            }
+            InsertNode(el);
             parent = el;
             current = null;
         }
@@ -259,10 +292,22 @@ namespace Spool
             return true;
         }
 
-        public IDisposable Save()
+        class SavePoint : IDisposable
         {
-            throw new NotImplementedException();
+            public SavePoint(XCursor parent) {
+                this.parent = parent;
+                state = (parent.parent, parent.current, parent.charIndex);
+            }
+            XCursor parent;
+            (XContainer, XNode, int) state;
+
+            public void Dispose()
+            {
+                (parent.parent, parent.current, parent.charIndex) = state;
+            }
         }
+
+        public IDisposable Save() => new SavePoint(this);
 
         public bool DeleteAll()
         {

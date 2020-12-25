@@ -367,6 +367,40 @@ lean"
 
 // <outline><name value=""ghost"">Ooooh</name></outline>"
 //             },
+            new []
+            {
+@"Emily
+(append: ""Emily"", ""Em"")[, my maid]",
+@"Emily, my maid
+"
+            },
+            new []
+            {
+@"|dress>[gown] (append: ?dress)[ from happier days]",
+@"<name value=""dress"">gown from happier days</name> "
+            },
+            new []
+            {
+@"Emily? Em? (prepend: ""Emily"", ""Em"")[Miss ]",
+@"Miss Emily? Miss Em? "
+            },
+            new []
+            {
+@"|dress>[gown] (prepend: ?dress)[my wedding ]",
+@"<name value=""dress"">my wedding gown</name> "
+            },
+            new []
+            {
+@"A categorical catastrophe! (replace: ""cat"")[**dog**]",
+@"A <strong>dog</strong>egorical <strong>dog</strong>astrophe! ",
+            },
+            new []
+            {
+@"A |heart>[song] in your heart, a |face>[song] on your face.
+(replace: ?face, ?heart)[smile]",
+@"A <name value=""heart"">smile</name> in your heart, a <name value=""face"">smile</name> on your face.
+"
+            }
         };
     
 // TODO: (if: (num:"5") > 2)
