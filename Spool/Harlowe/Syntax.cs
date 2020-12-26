@@ -223,6 +223,7 @@ namespace Spool.Harlowe
 
             public override void Render(Context context)
             {
+                // TODO: Merge this with (linkGoto:)
                 context.Cursor.PushTag("a", null);
                 context.Cursor.WriteText(Text);
                 context.Cursor.SetEvent("click", _ => context.GoTo(Link), true);

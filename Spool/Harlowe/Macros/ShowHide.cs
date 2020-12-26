@@ -4,16 +4,16 @@ namespace Spool.Harlowe
 {
     partial class BuiltInMacros
     {
-        public Command show(HookName nodes) => new Show(nodes);
+        public Command show(params HookName[] hooks) => new Show(hooks);
         class Show : Command
         {
-            public Show(HookName nodes) => Nodes = nodes;
-            public HookName Nodes { get; }
+            public Show(HookName[] hooks) => Hooks = CombinedSelector.Create(hooks);
+            public Selection Hooks { get; }
             public override void Run(Context context)
             {
                 using (context.Cursor.Save()) {
                     context.Cursor.Reset();                    
-                    var s = Nodes.MakeSelector();
+                    var s = Hooks.MakeSelector();
                     while (s.Advance(context.Cursor, AdvanceType.Append)) {
                         context.Cursor.RunEvent("show");
                     }

@@ -406,6 +406,21 @@ lean"
             {
 @"Don't you recognise me? (hidden:)|truth>[I'm your OC, brought to life!]",
 @"Don't you recognise me? <name value=""truth"" />"
+            },
+            new []
+            {
+@"(link-goto: ""Enter the cellar"", ""Cellar"")",
+@"<a>Enter the cellar</a>"
+            },
+            new []
+            {
+@"(link-goto: ""Cellar"")",
+@"<a>Cellar</a>"
+            },
+            new []
+            {
+@"(link-undo:""Retreat"")",
+@"<a>Retreat</a>"
             }
         };
 
@@ -433,6 +448,12 @@ lean"
 @"(set: $cheese to 0)(link-repeat: ""Add cheese"")[(set:$cheese to it + 1) You add another cheese.]",
 @"<span><a>Add cheese</a></span>",
 @"<span><a>Add cheese</a> You add another cheese.</span>"
+            },
+            new []
+            {
+@"But those little quirks paled before (link-show: ""her darker eccentricities"", ?twist). |twist)[She was a furry all along.]",
+@"But those little quirks paled before <a>her darker eccentricities</a>. <name value=""twist"" />",
+@"But those little quirks paled before her darker eccentricities. <name value=""twist"">She was a furry all along.</name>"
             }
         };
     

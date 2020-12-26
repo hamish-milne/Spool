@@ -113,6 +113,9 @@ namespace Spool.Harlowe
         {
             throw new NotImplementedException();
         }
+
+        public void Undo() => throw new NotImplementedException();
+
     }
 
     public abstract class Renderable : Data

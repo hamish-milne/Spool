@@ -19,6 +19,8 @@ namespace Spool.Harlowe
             protected virtual bool RemoveLinkStyle => false;
             protected virtual bool RemoveContent => false;
 
+            protected virtual void OnClick(Context context) {}
+
             public override void Render(Context context, Action source)
             {
                 // For repeated events we need to make an enclosing tag, because
@@ -40,12 +42,38 @@ namespace Spool.Harlowe
                         context.Cursor.MoveToEnd();
                     }
                     source();
+                    OnClick(context);
                 }, Repeat);
                 context.Cursor.Pop();
                 if (Repeat) {
                     context.Cursor.Pop();
                 }
             }
+        }
+
+        abstract class LinkCommand : Renderable
+        {
+            public LinkCommand(string text) {
+                Text = text;
+            }
+            public string Text { get; }
+            protected virtual bool RemoveLinkStyle => false;
+            public override void Render(Context context)
+            {
+                context.Cursor.PushTag("a", null);
+                context.Cursor.WriteText(Text);
+                context.Cursor.SetEvent("click", _ => {
+                    if (RemoveLinkStyle) {
+                        var inner = context.Cursor.DeleteAll();
+                        context.Cursor.DeleteContainer();
+                        inner();
+                    }
+                    OnClick(context);
+                }, false);
+                context.Cursor.Pop();
+            }
+
+            protected abstract void OnClick(Context context);
         }
 
         public Changer link(string text) => linkReplace(text);
@@ -71,6 +99,43 @@ namespace Spool.Harlowe
             public LinkRepeat(string text) : base(text) {}
             protected override bool HasLinkStyle => true;
             protected override bool Repeat => true;
+        }
+
+        public Renderable linkGoto(string text, string passage) => new LinkGoto(text, passage);
+        public Renderable linkGoto(string passage) => new LinkGoto(passage, passage);
+        class LinkGoto : LinkCommand
+        {
+            public LinkGoto(string text, string passage) : base(text) {
+                Passage = passage;
+            }
+            public string Passage { get; }
+            protected override void OnClick(Context context) => context.GoTo(Passage);
+        }
+
+        public Changer linkRevealGoto(string text, string passage) => new LinkRevealGoto(text, passage);
+        public Changer linkRevealGoto(string passage) => new LinkRevealGoto(passage, passage);
+        class LinkRevealGoto : LinkChanger
+        {
+            public LinkRevealGoto(string text, string passage) : base(text) => Passage = passage;
+            public string Passage { get; }
+            protected override bool HasLinkStyle => true;
+            protected override void OnClick(Context context) => context.GoTo(Passage);
+        }
+
+        public Renderable linkShow(string text, params HookName[] hooks) => new LinkShow(text, hooks);
+        class LinkShow : LinkCommand
+        {
+            protected override bool RemoveLinkStyle => true;
+            private readonly HookName[] hooks;
+            public LinkShow(string text, HookName[] hooks) : base(text) => this.hooks = hooks;
+            protected override void OnClick(Context context) => new Show(hooks).Run(context);
+        }
+
+        public Renderable linkUndo(string text) => new LinkUndo(text);
+        class LinkUndo : LinkCommand
+        {
+            public LinkUndo(string text) : base(text) {}
+            protected override void OnClick(Context context) => context.Undo();
         }
     }
 }
