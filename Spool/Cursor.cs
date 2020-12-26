@@ -26,10 +26,10 @@ namespace Spool
         bool Pop();
         IDisposable Save();
         bool DeleteContainer();
-        bool DeleteAll();
+        Action DeleteAll();
         bool DeleteChars(int chars);
         void Reset();
-        void SetEvent(string name, Action<Cursor> action);
+        void SetEvent(string name, Action<Cursor> action, bool repeat);
         void RunEvent(string name);
     }
 
@@ -312,14 +312,20 @@ namespace Spool
 
         public IDisposable Save() => new SavePoint(this);
 
-        public bool DeleteAll()
+        public Action DeleteAll()
         {
+            var items = new Queue<XNode>();
             while (current != null) {
                 var x = current;
                 current = x.NextNode;
+                items.Enqueue(x);
                 x.Remove();
             }
-            return true;
+            return () => {
+                while (items.Count > 0) {
+                    InsertNode(items.Dequeue());
+                }
+            };
         }
 
         public bool DeleteContainer()
@@ -349,7 +355,7 @@ namespace Spool
             charIndex = 0;
         }
 
-        public virtual void SetEvent(string name, Action<Cursor> action)
+        public virtual void SetEvent(string name, Action<Cursor> action, bool repeat)
         {
             var cParent = parent;
             switch (name) {
@@ -361,6 +367,9 @@ namespace Spool
                             current = cParent.FirstNode;
                             charIndex = 0;
                             action(this);
+                            if (!repeat) {
+                                cParent.RemoveAnnotations<ClickEvent>();
+                            }
                         }
                     }));
                     break;

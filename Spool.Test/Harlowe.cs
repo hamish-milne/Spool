@@ -401,6 +401,11 @@ lean"
 (replace: ?face, ?heart)[smile]",
 @"A <name value=""heart"">smile</name> in your heart, a <name value=""face"">smile</name> on your face.
 "
+            },
+            new []
+            {
+@"Don't you recognise me? (hidden:)|truth>[I'm your OC, brought to life!]",
+@"Don't you recognise me? <name value=""truth"" />"
             }
         };
 
@@ -416,6 +421,18 @@ lean"
 @"<name value=""fan"">The overhead fan spins lazily.</name>
 
 "
+            },
+            new []
+            {
+@"(link-reveal: ""Heart"")[broken]",
+@"<a>Heart</a>",
+@"Heartbroken"
+            },
+            new []
+            {
+@"(set: $cheese to 0)(link-repeat: ""Add cheese"")[(set:$cheese to it + 1) You add another cheese.]",
+@"<span><a>Add cheese</a></span>",
+@"<span><a>Add cheese</a> You add another cheese.</span>"
             }
         };
     

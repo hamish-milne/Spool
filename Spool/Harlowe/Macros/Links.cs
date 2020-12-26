@@ -21,18 +21,30 @@ namespace Spool.Harlowe
 
             public override void Render(Context context, Action source)
             {
+                // For repeated events we need to make an enclosing tag, because
+                // we need to append to the previous set of additions
+                if (Repeat) {
+                    context.Cursor.PushTag("span", null);
+                }
                 context.Cursor.PushTag("a", null);
                 context.Cursor.WriteText(Text);
                 context.Cursor.SetEvent("click", _ => {
                     if (RemoveContent) {
                         context.Cursor.DeleteContainer();
                     } else if (RemoveLinkStyle) {
-                        // TODO: Remove link style
-                        // context.Cursor.SetAttribute("link", null);
+                        var inner = context.Cursor.DeleteAll();
+                        context.Cursor.DeleteContainer();
+                        inner();
+                    } else if (Repeat) {
+                        context.Cursor.Pop();
+                        context.Cursor.MoveToEnd();
                     }
                     source();
-                });
+                }, Repeat);
                 context.Cursor.Pop();
+                if (Repeat) {
+                    context.Cursor.Pop();
+                }
             }
         }
 

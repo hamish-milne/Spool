@@ -81,8 +81,8 @@ Harlowe 3.1.0:
             ☐ dropdown
         Links:
             ✔ link / link-replace @done(20-12-26 16:04)
-            ☐ link-reveal
-            ☐ link-repeat
+            ✔ link-reveal @done(20-12-26 16:43)
+            ✔ link-repeat @done(20-12-26 19:20)
             ☐ link-goto
             ☐ link-reveal-goto
             ☐ link-show
@@ -130,8 +130,8 @@ Harlowe 3.1.0:
             ☐ save-game
             ☐ saved-games
         Showing and hiding:
-            ☐ hidden
-            ☐ show
+            ✔ hidden @done(20-12-26 16:06)
+            ✔ show @done(20-12-26 16:06)
         String:
             ☐ lowercase
             ☐ lowerfirst
@@ -180,7 +180,7 @@ Harlowe 3.1.0:
             ✔ Spread @done(20-12-23 19:46)
             ✔ is @done(20-12-23 19:46)
             ✔ + @done(20-12-23 19:46)
-            ☐ -
+            ✔ - @done(20-12-26 19:20)
             ☐ Serialization
         Bind:
             ☐ Syntax
@@ -213,7 +213,7 @@ Harlowe 3.1.0:
             ✔ is @done(20-12-23 21:09)
             ✔ contains @done(20-12-23 21:09)
             ✔ + @done(20-12-23 21:09)
-            ☐ -
+            ✔ - @done(20-12-26 19:20)
             ✔ spread @done(20-12-23 21:09)
             ✔ matches @done(20-12-25 22:42)
             ☐ Serialization

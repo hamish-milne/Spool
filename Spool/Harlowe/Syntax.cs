@@ -204,7 +204,7 @@ namespace Spool.Harlowe
                     context.Cursor.PushTag("name", name);
                 }
                 if (hidden == true) {
-                    context.Cursor.SetEvent("show", _ => finalRenderFn());
+                    context.Cursor.SetEvent("show", _ => finalRenderFn(), false);
                 } else {
                     finalRenderFn();
                 }
@@ -224,9 +224,8 @@ namespace Spool.Harlowe
             public override void Render(Context context)
             {
                 context.Cursor.PushTag("a", null);
-                // TODO: Passage target OnClick
                 context.Cursor.WriteText(Text);
-                context.Cursor.SetEvent("click", _ => context.GoTo(Link));
+                context.Cursor.SetEvent("click", _ => context.GoTo(Link), true);
                 context.Cursor.Pop();
             }
         }
