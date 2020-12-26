@@ -181,20 +181,26 @@ Harlowe 3.1.0:
             ✔ is @done(20-12-23 19:46)
             ✔ + @done(20-12-23 19:46)
             ☐ -
-        ☐ Bind
+            ☐ Serialization
+        Bind:
+            ☐ Syntax
+            ☐ Serialization
         Boolean:
             ✔ Literals @done(20-12-23 20:41)
             ✔ is @done(20-12-23 20:41)
             ✔ and @done(20-12-24 00:42)
             ✔ or @done(20-12-24 00:42)
             ✔ not @done(20-12-24 00:42)
+            ☐ Serialization
         Changer:
             ☐ +
+            ☐ Serialization
         Colour:
             ☐ Built-in names
             ☐ #-syntax
             ✔ r,g,b,h,s,l @done(20-12-23 20:41)
             ☐ +
+            ☐ Serialization
         ☐ Command
         Datamap:
             ✔ Index @done(20-12-23 20:41)
@@ -210,10 +216,12 @@ Harlowe 3.1.0:
             ☐ -
             ✔ spread @done(20-12-23 21:09)
             ✔ matches @done(20-12-25 22:42)
+            ☐ Serialization
         ✔ Datatype @done(20-12-25 19:37)
         Gradient:
             ☐ angle
             ☐ stops
+            ☐ Serialization
         HookName:
             ☐ chars
             ☐ lines
@@ -222,6 +230,7 @@ Harlowe 3.1.0:
             ☐ Range
             ☐ Selector
             ☐ +
+            ☐ Serialization
         ☐ Instant
         Lambda:
             ✔ each @done(20-12-24 00:41)
@@ -229,9 +238,11 @@ Harlowe 3.1.0:
             ☐ via
             ☐ making
             ☐ when
+            ☐ Serialization? NB not supported by Twine
         Number:
             ✔ Arithmetic operations @done(20-12-23 21:09)
             ✔ Test operations @done(20-12-23 21:09)
+            ☐ Serialization
         String:
             ✔ Index @done(20-12-24 00:37)
             ☐ Range
@@ -240,6 +251,7 @@ Harlowe 3.1.0:
             ✔ is @done(20-12-24 00:37)
             ✔ contains @done(20-12-24 00:37)
             ✔ any / all / length @done(20-12-25 22:42)
+            ☐ Serialization
         ✔ VariableToValue @done(20-12-25 22:42)
     Features:
         ☐ User-defined macros
@@ -249,6 +261,9 @@ Unity support:
     ✔ Text Mesh Pro @done(20-12-24 14:42)
     ✔ UGUI Text @done(20-12-24 14:42)
     ☐ Live updates
+    ☐ StreamingAssets support
+    ☐ 'Strip engine code' support
+    ☐ HTML Archive support
 Refactoring:
     ✔ Rich Text @done(20-12-24 14:12)
     ☐ Add special '->' expression for links
@@ -271,3 +286,4 @@ Admin:
     ☐ Unity icons
     ☐ Documentation
     ✔ Structure @done(20-12-25 18:17)
+    ☐ CI

@@ -48,6 +48,18 @@
                 "${workspaceFolder}/Spool.Test/Spool.Test.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "group": "build",
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/Spool/Spool.csproj",
+                "--output=${workspaceFolder}/Spool.Unity/Runtime"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

@@ -3,3 +3,4 @@ obj
 **/TestResults/**
 Spool.Unity/Runtime/*.dll
 Spool.Unity/Runtime/*.pdb
+Spool.Unity/Runtime/*.deps.json
