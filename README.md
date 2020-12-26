@@ -52,4 +52,4 @@ Right now, to include Spool in your project you'll need to build it yourself. Fo
 * **Player**: The Unity component responsible for story state and coordination.
 * **Output**: A Unity component that turns the abstract passage content into visible, interactable objects.
 * **Cursor**: Emits, reads, and revises the passage output (analogous to a cursor in a text editing app)
-* **XNode**: The root type of the `System.Xml.Linq` framework. Spool uses XNodes to
+* **XNode**: The root type of the `System.Xml.Linq` framework. Spool uses XNodes to keep track of the currently rendered text.

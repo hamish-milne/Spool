@@ -634,6 +634,36 @@ lean"
             new []{"'Penny''s length", "5"},
             new []{"all of \"aeiou\" is not \"y\"", "true"},
             new []{"'aeiou''s (a:1,-1)", "'au'"},
+
+            new []{"(abs: -4)", "4"},
+            new []{"(cos: 3.14159265)", "-1"},
+            new []{"(round: (exp: 6))", "403"},
+            new []{"(log: (exp:5))", "5"},
+            new []{"(log10: 100)", "2"},
+            new []{"(log2: 256)", "8"},
+            new []{"(max: 2, -5, 2, 7, 0.1)", "7"},
+            new []{"(min: 2, -5, 2, 7, 0.1)", "-5"},
+            new []{"(pow: 2, 8)", "256"},
+            new []{"(sign: -4)", "-1"},
+            new []{"(sin: 3.14159265 / 2)", "1"},
+            new []{"(sqrt: 25)", "5"},
+            new []{"(round: (tan: 3.14159265 / 4))", "1"},
+
+            new []{"(ceil: 1.1)", "2"},
+            new []{"(floor: 1.99)", "1"},
+            new []{"(num: \"25\")", "25"},
+            new []{"(random: 1,6) is in (range:1,6)", "true"},
+            new []{"(round: 1.5)", "2"},
+
+            new []{"(lowercase: \"GrImAcE\")", "'grimace'"},
+            new []{"(lowerfirst: \" College B\")", "' college B'"},
+            new []{"(str-repeated: 5, \"Fool! \")", "'Fool! Fool! Fool! Fool! Fool! '"},
+            new []{"(str-reversed: \"sknahT\")", "'Thanks'"},
+            new []{"(str: (a: 2, \"Hot\", 4, \"U\"))", "'2,Hot,4,U'"},
+            new []{"(str: ...(a: 2, \"Hot\", 4, \"U\"))", "'2Hot4U'"},
+            new []{"(uppercase: \"GrImAcE\")", "'GRIMACE'"},
+            new []{"(upperfirst: \" college B\")", "' College B'"},
+            new []{"(words: \"god-king Torment's peril\")", "(a: \"god-king\", \"Torment's\", \"peril\")"},
         };
 
         [Theory]

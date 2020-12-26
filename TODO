@@ -98,25 +98,25 @@ Harlowe 3.1.0:
             ☐ event
             ☐ more
         Maths:
-            ☐ abs
-            ☐ cos
-            ☐ exp
-            ☐ log
-            ☐ log10
-            ☐ log2
-            ☐ max
-            ☐ min
-            ☐ pow
-            ☐ sign
-            ☐ sin
-            ☐ sqrt
-            ☐ tan
+            ✔ abs @done(20-12-26 20:32)
+            ✔ cos @done(20-12-26 20:32)
+            ✔ exp @done(20-12-26 20:32)
+            ✔ log @done(20-12-26 20:32)
+            ✔ log10 @done(20-12-26 20:32)
+            ✔ log2 @done(20-12-26 20:32)
+            ✔ max @done(20-12-26 20:32)
+            ✔ min @done(20-12-26 20:32)
+            ✔ pow @done(20-12-26 20:32)
+            ✔ sign @done(20-12-26 20:32)
+            ✔ sin @done(20-12-26 20:32)
+            ✔ sqrt @done(20-12-26 20:32)
+            ✔ tan @done(20-12-26 20:32)
         Number:
-            ☐ ceil
-            ☐ floor
-            ☐ num / number
-            ☐ random
-            ☐ round
+            ✔ ceil @done(20-12-26 20:32)
+            ✔ floor @done(20-12-26 20:32)
+            ✔ num / number @done(20-12-26 20:32)
+            ✔ random @done(20-12-26 20:32)
+            ✔ round @done(20-12-26 20:32)
         Popup:
             ☐ alert
             ☐ confirm
@@ -133,14 +133,14 @@ Harlowe 3.1.0:
             ✔ hidden @done(20-12-26 16:06)
             ✔ show @done(20-12-26 16:06)
         String:
-            ☐ lowercase
-            ☐ lowerfirst
-            ☐ str-repeated / string-repeated
-            ☐ str-reversed / string-reversed
-            ☐ str / string / text
-            ☐ uppercase
-            ☐ upperfirst
-            ☐ words
+            ✔ lowercase @done(20-12-26 20:49)
+            ✔ lowerfirst @done(20-12-26 20:49)
+            ✔ str-repeated / string-repeated @done(20-12-26 20:49)
+            ✔ str-reversed / string-reversed @done(20-12-26 20:49)
+            ✔ str / string / text @done(20-12-26 20:49)
+            ✔ uppercase @done(20-12-26 20:49)
+            ✔ upperfirst @done(20-12-26 20:49)
+            ✔ words @done(20-12-26 20:49)
         Styling:
             ☐ align
             ☐ background
