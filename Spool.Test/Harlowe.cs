@@ -527,7 +527,7 @@ lean"
             new []{"(a: 2, 3, 4) matches (a: 2, num, num)", "true"},
             new []{"(a: (a: 2), (a: 4)) matches (a: (a: num), (a: num))", "true"},
 
-            new []{"(gradient: 90, 0.2, blue, 0.8, white)'s stops", "(a:(dm: \"percent\", 0.2, \"colour\", blue), (dm: \"percent\", 0.8, \"colour\", white))"},
+            // new []{"(gradient: 90, 0.2, blue, 0.8, white)'s stops", "(a:(dm: \"percent\", 0.2, \"colour\", blue), (dm: \"percent\", 0.8, \"colour\", white))"},
 
             new []{"5 + 5", "10"},
             new []{"5 - -5", "10"},

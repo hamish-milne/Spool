@@ -107,6 +107,7 @@ namespace Spool.Harlowe
             return rhs switch {
                 DataCollection a => op switch {
                     Operator.Add => Create(value.Concat(a.value)),
+                    Operator.Subtract => Create(value.Where(x => !a.Contains(x))),
                     _ => base.Operate(op, rhs)
                 },
                 _ => base.Operate(op, rhs)
