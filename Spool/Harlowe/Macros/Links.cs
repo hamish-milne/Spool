@@ -19,19 +19,16 @@ namespace Spool.Harlowe
             protected virtual bool RemoveLinkStyle => false;
             protected virtual bool RemoveContent => false;
 
-            public override void Apply(ref bool? hidden, ref string name) => hidden = true;
-
             public override void Render(Context context, Action source)
             {
                 context.Cursor.PushTag("a", null);
                 context.Cursor.WriteText(Text);
                 context.Cursor.SetEvent("click", _ => {
-                    if (RemoveLinkStyle) {
+                    if (RemoveContent) {
+                        context.Cursor.DeleteContainer();
+                    } else if (RemoveLinkStyle) {
                         // TODO: Remove link style
                         // context.Cursor.SetAttribute("link", null);
-                    }
-                    if (RemoveContent) {
-                        context.Cursor.DeleteAll();
                     }
                     source();
                 });

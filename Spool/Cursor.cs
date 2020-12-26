@@ -25,10 +25,12 @@ namespace Spool
         bool Advance();
         bool Pop();
         IDisposable Save();
+        bool DeleteContainer();
         bool DeleteAll();
         bool DeleteChars(int chars);
         void Reset();
         void SetEvent(string name, Action<Cursor> action);
+        void RunEvent(string name);
     }
 
     enum AdvanceType
@@ -165,6 +167,7 @@ namespace Spool
     public class XCursor : Cursor
     {
         public delegate void ClickEvent();
+        public delegate void ShowEvent();
         public delegate void MouseInEvent();
         public XDocument Root { get; } = new XDocument(new XElement("tw-passage"));
         private XContainer parent;
@@ -319,6 +322,16 @@ namespace Spool
             return true;
         }
 
+        public bool DeleteContainer()
+        {
+            var toRemove = parent;
+            if (Pop()) {
+                toRemove.Remove();
+                return true;
+            }
+            return false;
+        }
+
         public bool DeleteChars(int chars)
         {
             if (current is XText tnode) {
@@ -341,12 +354,38 @@ namespace Spool
             var cParent = parent;
             switch (name) {
                 case "click":
+                // TODO: Make better use of RunEvent
                     parent.AddAnnotation(new ClickEvent(() => {
-                        parent = cParent;
-                        current = cParent.FirstNode;
-                        charIndex = 0;
-                        action(this);
+                        using (Save()) {
+                            parent = cParent;
+                            current = cParent.FirstNode;
+                            charIndex = 0;
+                            action(this);
+                        }
                     }));
+                    break;
+                case "show":
+                    parent.AddAnnotation(new ShowEvent(() => {
+                        using (Save()) {
+                            parent = cParent;
+                            current = cParent.FirstNode;
+                            charIndex = 0;
+                            action(this);
+                            cParent.RemoveAnnotations<ShowEvent>();
+                        }
+                    }));
+                    break;
+            }
+        }
+
+        public void RunEvent(string name)
+        {
+            switch (name) {
+                case "click":
+                    parent.Annotation<ClickEvent>()?.Invoke();
+                    break;
+                case "show":
+                    parent.Annotation<ShowEvent>()?.Invoke();
                     break;
             }
         }

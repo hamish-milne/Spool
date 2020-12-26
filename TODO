@@ -80,7 +80,7 @@ Harlowe 3.1.0:
             ☐ cycling-link
             ☐ dropdown
         Links:
-            ☐ link / link-replace
+            ✔ link / link-replace @done(20-12-26 16:04)
             ☐ link-reveal
             ☐ link-repeat
             ☐ link-goto

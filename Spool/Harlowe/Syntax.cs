@@ -114,17 +114,7 @@ namespace Spool.Harlowe
 
             [Optional] HookSyntax hook;
 
-            private class ShowHiddenHook : Renderable
-            {
-                public ShowHiddenHook(AppliedHook parent) => this.parent = parent;
-                private readonly AppliedHook parent;
-
-                public override void Render(Context context) => parent.Render(context, true);
-            }
-
-            public override void Render(Context context) => Render(context, false);
-
-            public void Render(Context context, bool forceShow)
+            public override void Render(Context context)
             {
                 var changerObjs = new List<Changer>();
                 if (hook?.prefix != null) {
@@ -158,70 +148,68 @@ namespace Spool.Harlowe
                 if (hidden != null) {
                     context.PreviousCondition = hidden;
                 }
-                if (hidden == true && !forceShow) {
-                    if (name != null)
+
+                Action renderHookBody;
+
+                // If applied to a hook, render its body:
+                if (hook != null)
+                {
+                    renderHookBody = () => hook.body.Render(context);
+                }
+                else
+                {
+                    // Otherwise, render the content of the final macro/variable:
+                    var macroResult = changers.Last().Evaluate(context);
+                    switch (macroResult)
                     {
-                        context.Cursor.PushTag("name", name);
-                        context.Cursor.Pop();
-                        // TODO: Show hidden
-                        // h.SetAttribute(new ShowHiddenHook(this));
+                        case Renderable r:
+                            renderHookBody = () => r.Render(context);
+                            break;
+                        case Command cmd:
+                            if (changerObjs.Count > 0)
+                            {
+                                throw new Exception("Changers cannot be applied to Commands");
+                            }
+                            cmd.Run(context);
+                            return;
+                        case null:
+                            // 'Instant' e.g. Set, Put
+                            if (changerObjs.Count > 0)
+                            {
+                                throw new Exception("Changers cannot be applied to Instants");
+                            }
+                            return;
+                        default:
+                            throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
                     }
+                }
+
+                // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
+                Action initialRenderFn = () => {
+                    var prevCond = context.NewCondition();
+                    renderHookBody();
+                    context.PopCondition(prevCond);
+                };
+
+                // Apply changers in reverse order:
+                changerObjs.Reverse();
+                var finalRenderFn = changerObjs.Aggregate(initialRenderFn,
+                    (sourceFn, changer) => () => changer.Render(context, sourceFn)
+                );
+
+                if (hidden == true && name == null) {
+                    return; // Hidden, un-named hooks can never be made visible
+                }
+                if (name != null) {
+                    context.Cursor.PushTag("name", name);
+                }
+                if (hidden == true) {
+                    context.Cursor.SetEvent("show", _ => finalRenderFn());
                 } else {
-                    Action renderHookBody;
-
-                    // If applied to a hook, render its body:
-                    if (hook != null)
-                    {
-                        renderHookBody = () => hook.body.Render(context);
-                    }
-                    else
-                    {
-                        // Otherwise, render the content of the final macro/variable:
-                        var macroResult = changers.Last().Evaluate(context);
-                        switch (macroResult)
-                        {
-                            case Renderable r:
-                                renderHookBody = () => r.Render(context);
-                                break;
-                            case Command cmd:
-                                if (changerObjs.Count > 0)
-                                {
-                                    throw new Exception("Changers cannot be applied to Commands");
-                                }
-                                cmd.Run(context);
-                                return;
-                            case null:
-                                // 'Instant' e.g. Set, Put
-                                if (changerObjs.Count > 0)
-                                {
-                                    throw new Exception("Changers cannot be applied to Instants");
-                                }
-                                return;
-                            default:
-                                throw new Exception($"Result {macroResult} of expression {changers.Last()} is not printable");
-                        }
-                    }
-
-                    // Push a new state, and add the name tag to the inner content
-                    // TODO: Name the hook before or after rendering it? This has implications on whether (replace:) affects the hook it's running in
-                    Action initialRenderFn = () => {
-                        var prevCond = context.NewCondition();
-                        if (name != null) {
-                            context.Cursor.PushTag("name", name);
-                            renderHookBody();
-                            context.Cursor.Pop();
-                        } else {
-                            renderHookBody();
-                        }
-                        context.PopCondition(prevCond);
-                    };
-
-                    // Apply changers in reverse order:
-                    changerObjs.Reverse();
-                    var finalRenderFn = changerObjs.Aggregate(initialRenderFn,
-                        (sourceFn, changer) => () => changer.Render(context, sourceFn)
-                    );
                     finalRenderFn();
+                }
+                if (name != null) {
+                    context.Cursor.Pop();
                 }
             }
         }

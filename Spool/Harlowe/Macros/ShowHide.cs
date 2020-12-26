@@ -4,24 +4,22 @@ namespace Spool.Harlowe
 {
     partial class BuiltInMacros
     {
-        // public Command show(HookName nodes) => new Show(nodes);
-        // class Show : Command
-        // {
-        //     public Show(HookName nodes) => Nodes = nodes;
-        //     public HookName Nodes { get; }
-        //     public void Run(Context context)
-        //     {
-        //         foreach (var node in Nodes) {
-        //             if (context.Hidden.TryGetValue(node, out var renderable)) {
-        //                 var state = context.Push(node, CursorPos.Before);
-        //                 renderable.Render(context);
-        //                 context.Hidden.Remove(node);
-        //                 node.Remove();
-        //                 context.Pop(state);
-        //             }
-        //         }
-        //     }
-        // }
+        public Command show(HookName nodes) => new Show(nodes);
+        class Show : Command
+        {
+            public Show(HookName nodes) => Nodes = nodes;
+            public HookName Nodes { get; }
+            public override void Run(Context context)
+            {
+                using (context.Cursor.Save()) {
+                    context.Cursor.Reset();                    
+                    var s = Nodes.MakeSelector();
+                    while (s.Advance(context.Cursor, AdvanceType.Append)) {
+                        context.Cursor.RunEvent("show");
+                    }
+                }
+            }
+        }
 
         public Changer hidden() => Hidden.Instance;
         class Hidden : Changer

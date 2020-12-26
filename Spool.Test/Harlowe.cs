@@ -1,3 +1,4 @@
+using System.Linq;
 using System.IO;
 using System;
 using Xunit;
@@ -402,6 +403,21 @@ lean"
 "
             }
         };
+
+        public static object[][] LinkMarkup = {
+            new []
+            {
+@"|fan)[The overhead fan spins lazily.]
+
+(link:""Turn on fan"")[(show:?fan)]",
+@"<name value=""fan"" />
+
+<a>Turn on fan</a>",
+@"<name value=""fan"">The overhead fan spins lazily.</name>
+
+"
+            }
+        };
     
 // TODO: (if: (num:"5") > 2)
 // TODO: (either: ...$array)
@@ -428,6 +444,28 @@ lean"
             context.GoTo("Test");
             var actual = cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
+        }
+
+        [Theory]
+        [MemberData(nameof(LinkMarkup))]
+        public void ClickableMarkup(string input, string expectedBefore, string expectedAfter)
+        {
+            // using var fs = File.Open("./out.txt", FileMode.Append);
+            // using var sw = new StreamWriter(fs){AutoFlush = true};
+            var body = Lexico.Lexico.Parse<Block>(input
+                // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
+                // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
+            );
+            var cursor = new XCursor();
+            var context = new Harlowe.Context(new ListStory {
+                {"Test", input}
+            }, cursor);
+            context.GoTo("Test");
+            var actualBefore = cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal($"<tw-passage>{expectedBefore.Replace("\r", "")}</tw-passage>", actualBefore.Replace("\r", ""));
+            cursor.Root.Descendants(XName.Get("a")).First().Annotation<XCursor.ClickEvent>().Invoke();
+            var actualAfter = cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
+            Assert.Equal($"<tw-passage>{expectedAfter.Replace("\r", "")}</tw-passage>", actualAfter.Replace("\r", ""));
         }
 
         public static object[][] ExampleExpressions = {
