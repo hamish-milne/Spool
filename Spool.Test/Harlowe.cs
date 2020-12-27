@@ -18,7 +18,7 @@ namespace Spool.Test
         public Dictionary<string, string> Passages { get; } = new Dictionary<string, string>();
         public IEnumerable<string> PassageNames => Passages.Keys;
         public string Start => throw new NotImplementedException();
-        public bool CheckPassageTag(string passage, string tag) => false;
+        public IEnumerable<string> GetTags(string passage) => Enumerable.Empty<string>();
         public string GetPassage(string name) => Passages[name];
         public (int, int) GetPassagePosition(string name) => (0, 0);
         public Context Run(Cursor output) => throw new NotImplementedException();

@@ -63,7 +63,7 @@ namespace Spool.Harlowe
         public object Object => cachedObject ??= GetObject();
         protected abstract object GetObject();
 
-        private static readonly IComparer comparer = new AlphanumComparator.AlphanumComparator();
+        private static readonly IComparer<string> comparer = new Util.AlphanumComparator();
 
         public int CompareTo(Data other) => comparer.Compare(ToString(), other.ToString());
 

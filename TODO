@@ -73,9 +73,9 @@ Harlowe 3.1.0:
             ✔ monthday @done(20-12-23 18:19)
             ✔ weekday @done(20-12-23 18:19)
         Game state:
-            ☐ history
-            ☐ passage
-            ☐ passages
+            ✔ history @done(20-12-27 16:22)
+            ✔ passage @done(20-12-27 16:22)
+            ✔ passages @done(20-12-27 16:22)
         Input:
             ☐ cycling-link
             ☐ dropdown
@@ -239,6 +239,7 @@ Harlowe 3.1.0:
             ☐ making
             ☐ when
             ☐ Serialization? NB not supported by Twine
+            ☐ Omit variable syntax (with 'it')
         Number:
             ✔ Arithmetic operations @done(20-12-23 21:09)
             ✔ Test operations @done(20-12-23 21:09)
@@ -269,6 +270,7 @@ Refactoring:
     ☐ Add special '->' expression for links
 Bugs and edge cases:
     ✔ Correct string-based content selection behaviour @done(20-12-25 01:29)
+    ☐ (print:) and similar should re-parse and evaluate their arguments
     ☐ Parsing should always be successful, even with errors
     ☐ Local variable scopes, inc.
     ☐ Left-links left-associativity
@@ -282,6 +284,7 @@ Bugs and edge cases:
     ☐ Gradients can be printed to make a <tw-colour>
     ☐ (deprecated) hook names in (set:) and (put:)
     ☐ DataSet 'matches' behaviour
+    ☐ DataMaps should render as a <table>
 Admin:
     ☐ Unity icons
     ☐ Documentation

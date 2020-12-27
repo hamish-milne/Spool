@@ -35,15 +35,16 @@
  */
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 
 /*
  * Please compare against the latest Java version at http://www.DaveKoelle.com
  * to see the most recent modifications
  */
-namespace AlphanumComparator
+namespace Util
 {
-    public class AlphanumComparator : IComparer
+    public class AlphanumComparator : IComparer<string>, IComparer
     {
         private enum ChunkType {Alphanumeric, Numeric};
         private bool InChunk(char ch, char otherCh)
@@ -73,6 +74,11 @@ namespace AlphanumComparator
                 return 0;
             }
 
+            return Compare(s1, s2);
+        }
+
+        public int Compare(string s1, string s2)
+        {
             int thisMarker = 0, thisNumericChunk = 0;
             int thatMarker = 0, thatNumericChunk = 0;
 

@@ -13,7 +13,7 @@ namespace Spool
     {
         string GetPassage(string name);
         (int, int) GetPassagePosition(string name);
-        bool CheckPassageTag(string passage, string tag);
+        IEnumerable<string> GetTags(string name);
         IEnumerable<string> PassageNames { get; }
         Context Run(Cursor output);
         string Start { get; }
@@ -49,12 +49,11 @@ namespace Spool
             return (int.Parse(pos[0]), int.Parse(pos[1]));
         }
 
-        public bool CheckPassageTag(string passage, string tag)
+        public IEnumerable<string> GetTags(string passage)
         {
-            var tags = story.Elements(XName.Get("tw-passagedata"))
+            return story.Elements(XName.Get("tw-passagedata"))
                 .First(x => x.Attribute(XName.Get("name")).Value == passage)
                 .Attribute(XName.Get("tags")).Value.Split(' ');
-            return tags.Contains(tag);
         }
 
         public IEnumerable<string> PassageNames => story.Elements(XName.Get("tw-passagedata"))
