@@ -25,5 +25,16 @@ namespace Spool.Harlowe
         public Changer font(string font) => new StyleChanger("font", font);
         public Changer textColour(string color) => new StyleChanger("color", color);
         public Changer textColor(string color) => new StyleChanger("color", color);
+        public Changer textStyle(string style) => style switch {
+            "none" => NullChanger.Instance,
+            "bold" => new StyleChanger("b", null),
+            "italic" => new StyleChanger("i", null),
+            "underline" => new StyleChanger("u", null),
+            "strike" => new StyleChanger("s", null),
+            "superscript" => new StyleChanger("sup", null),
+            "subscript" => new StyleChanger("sub", null),
+            "mark" => new StyleChanger("mark", null),
+            _ => new StyleChanger(style, null)
+        };
     }
 }

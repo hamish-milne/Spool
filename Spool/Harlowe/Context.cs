@@ -13,6 +13,11 @@ namespace Spool.Harlowe
             => format == "Harlowe" && version.CompareTo("3.1.0") <= 0;
     }
 
+    public interface PostProcessor
+    {
+        void PostProcess(Context context);
+    }
+
     public class Context : Spool.Context
     {
         public Context(Story story, Cursor output)
@@ -33,6 +38,7 @@ namespace Spool.Harlowe
         public bool? PreviousCondition { get; set; }
         public object MacroProvider { get; }
         public Random Random { get; } = new Random();
+        public List<PostProcessor> PostProcessors { get; } = new List<PostProcessor>();
 
         public IEnumerable<string> History => history;
         public int Visits(string passage) => history.Count(x => x == passage);
@@ -68,6 +74,9 @@ namespace Spool.Harlowe
                     Cursor.Reset();
                     Cursor.DeleteAll();
                     GetPassageBody(CurrentPassage).Render(this);
+                    foreach (var p in PostProcessors) {
+                        p.PostProcess(this);
+                    }
                 } while (CurrentPassage != previous);
             } finally {
                 isRendering = false;

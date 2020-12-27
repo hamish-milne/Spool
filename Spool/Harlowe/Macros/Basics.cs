@@ -92,5 +92,40 @@ namespace Spool.Harlowe
             return values[idx];
         }
 
+        public Command enchant(HookName hook, Changer changer) => new Enchant(hook, changer);
+        public Command enchant(string text, Changer changer) => new Enchant(new ContentSelector(new []{text}), changer);
+
+        class Enchant : Command, PostProcessor
+        {
+            private readonly Selection selection;
+            private readonly Changer changer;
+            private string id;
+
+            public Enchant(Selection selection, Changer changer)
+            {
+                this.selection = selection;
+                this.changer = changer;
+            }
+
+            public void PostProcess(Context context)
+            {
+                context.Cursor.Reset();
+                var s = selection.MakeSelector();
+                while (s.Advance(context.Cursor, AdvanceType.ReplaceContainer, c => !c.CheckParentTags("enchant", id))) {
+                    context.Cursor.PushTag("enchant", id);
+                    changer.Render(context, () => s.ReplaceSource(context.Cursor));
+                    context.Cursor.Pop();
+                }
+            }
+
+            public override void Run(Context context)
+            {
+                if (!context.PostProcessors.Contains(this)) {
+                    id = context.PostProcessors.Count.ToString();
+                    context.PostProcessors.Add(this);
+                }
+            }
+        }
+
     }
 }

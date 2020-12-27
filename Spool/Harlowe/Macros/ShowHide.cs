@@ -14,7 +14,7 @@ namespace Spool.Harlowe
                 using (context.Cursor.Save()) {
                     context.Cursor.Reset();                    
                     var s = Hooks.MakeSelector();
-                    while (s.Advance(context.Cursor, AdvanceType.Append)) {
+                    while (s.Advance(context.Cursor, AdvanceType.Append, _ => true)) {
                         context.Cursor.RunEvent("show");
                     }
                 }

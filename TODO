@@ -41,7 +41,7 @@ Harlowe 3.1.0:
             ✔ either @done(20-12-23 18:27)
             ✔ cond @done(20-12-23 18:05)
             ✔ nth @done(20-12-23 18:05)
-            ☐ enchant
+            ✔ enchant @done(20-12-27 22:57)
         Colour:
             ☐ gradient
             ☐ hsl / hsla
@@ -290,3 +290,35 @@ Admin:
     ☐ Documentation
     ✔ Structure @done(20-12-25 18:17)
     ☐ CI
+
+# Notes on verbatim markup
+
+(set: $foo to 'the value')
+`(a:)`
+    => (a:)
+(print: `(a:)`)
+    => Macros.run("a", section,)
+(print: `$foo`)
+    => VarRef.create(State.variables,"foo").get()
+(print: '$foo')
+    => the value
+(print: `$f` + `oo`)
+    => VarRef.create(State.variables,"f").get()oo
+(print: `$` + `foo`)
+    => the value
+(print: '$f' + 'oo')
+    => the value
+(print: '*foo*')
+    => foo
+(print: `foo`)
+    => foo
+(print: '**foo**' contains '*foo*')
+    => true
+(print: '*foo*' is '<em>foo</em>')
+    => true
+(print: `(a:)` contains 'VarRef')
+    => ERROR
+(print: `<em>foo</em>`)
+    => ERROR
+(print: `*foo*`)
+    => ERROR

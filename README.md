@@ -6,7 +6,7 @@ See [the TODO file](./TODO) for current progress.
 
 Spool allows you to play [Twine 2](https://twinery.org/2) stories in [Unity](https://unity3d.com) projects. Simply drop your HTML file into the Assets folder, select the asset in a Spool Output, and you're good to go. Links in the story will become clickable regions in the UGUI Text or TextMeshPro component it's attached to.
 
-Spool is functionally quite similar to Cradle, which is also a Twine 2 library for Unity, but the priorities and design philosophies of the two are a little different. At the time of writing, Cradle is not being actively developed, but you should check it out anyway in case it fits your needs better.
+Spool is functionally quite similar to [Cradle](https://github.com/daterre/Cradle), which is also a Twine 2 library for Unity, but the priorities and design philosophies of the two are a little different. At the time of writing, Cradle is not being actively developed, but you should check it out anyway in case it fits your needs better.
 
 Spool has the following design goals:
 
@@ -33,9 +33,19 @@ Some other macros will, though executing faithfully, be ignored by the included 
 
 They will still be passed to the Cursor as `<rotate=45>` or similar, but actually implementing text rotation is left as an exercise to the reader ;)
 
+In general, Spool will never be bit-for-bit identical to Harlowe. In particular, no guarantees are made as to the nature of error messages, or behaviour not defined in the Harlowe manual.
+
+While performance has been considered during development, the inherently dynamic nature of Harlowe means that there will always be some allocations when rendering a new passage. Furthermore, certain operations like `(history:)` have `O(n)` complexity, and will become slower as more passages are visited.
+
+## Changes and fixes
+
+Spool aims to be as compatible as possible with the Harlowe engine, so - where feasible - quirks of Harlowe are preserved. However, some behaviour is inconsistent with the manual (i.e. a bug) while others are so... specific to Harlowe's rendering code that to replicate it would be a detriment.
+
+For example,`print(``$foo``)` produces `VarRef.create(State.variables,"foo").get()` in Twine, but produces `$foo` in Spool. Similarly, `(print: ``*foo*``)` produces an error in Twine, but correctly prints `*foo*` in Spool.
+
 ## Project structure
 
-* **Spool**: The platform-independent library, targeting netstandard2.0. You can use this in other C#-based engines, besides Unity.
+* **Spool**: The platform-independent library, targeting `netstandard2.0`. You can use this in other C#-based engines, besides Unity.
 * **Spool.Test**: xUnit test code, mainly comprised of lots of snippets copied from the Harlowe manual. Since there's a pre-existing spec, Spool uses test-driven-development as much as possible.
 * **Spool.Unity**: The Unity package (UPM - not .unitypackage), including Unity importers and runtime components.
 * **Lexico**: A parser-generator library used as a dependency. I'm making a few changes throughout development, hence it's a submodule rather than a nuget package.

@@ -359,15 +359,15 @@ lean"
 @"(nth: visit, 'Hi!', 'Hello again!', ""Oh, it's you!"", 'Hey!')",
 @"Hi!"
             },
-//             new []
-//             {
-// @"|ghost>[Awoo]
-// (enchant: ?ghost, (text-style:'outline'))
-// |ghost>[Ooooh]",
-// @"<outline><name value=""ghost"">Awoo</name></outline>
+            new []
+            {
+@"|ghost>[Awoo]
+(enchant: ?ghost, (text-style:'outline'))
+|ghost>[Ooooh]",
+@"<enchant value=""0""><outline><name value=""ghost"">Awoo</name></outline></enchant>
 
-// <outline><name value=""ghost"">Ooooh</name></outline>"
-//             },
+<enchant value=""0""><outline><name value=""ghost"">Ooooh</name></outline></enchant>"
+            },
             new []
             {
 @"Emily
@@ -722,7 +722,7 @@ lean"
             Assert.Equal("<tw-passage>Some text <a>Passage 2</a></tw-passage>", Eval());
             cursor.Root.Root.Element(XName.Get("a")).Annotation<XCursor.ClickEvent>().Invoke();
             Assert.Equal("<tw-passage>More text</tw-passage>", Eval());
-            Assert.True(story.CheckPassageTag("Passage 1", "bar"));
+            Assert.Equal(new []{"foo", "bar"}, story.GetTags("Passage 1"));
             Assert.Equal(new []{"Passage 1", "Passage 2"}, story.PassageNames);
         }
 

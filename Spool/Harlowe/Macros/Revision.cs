@@ -25,7 +25,7 @@ namespace Spool.Harlowe
                 {
                     context.Cursor.Reset();
                     var selector = Target.MakeSelector();
-                    while (selector.Advance(context.Cursor, Mode)) {
+                    while (selector.Advance(context.Cursor, Mode, _ => true)) {
                         source();
                     }
                 }

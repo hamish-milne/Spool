@@ -20,12 +20,13 @@ namespace Spool
         void WriteRaw(string markup);
         void WriteText(string text);
         void PushTag(string tag, string value);
+        bool CheckParentTags(string tag, string value);
         bool Step(int chars);
         bool MoveToEnd();
         bool Advance();
         bool Pop();
         IDisposable Save();
-        bool DeleteContainer();
+        Action DeleteContainer();
         Action DeleteAll();
         bool DeleteChars(int chars);
         void Reset();
@@ -37,7 +38,8 @@ namespace Spool
     {
         Prepend,
         Append,
-        Replace
+        Replace,
+        ReplaceContainer
     }
 
     interface Selection
@@ -47,16 +49,18 @@ namespace Spool
 
     interface Selector
     {
-        bool Advance(Cursor cursor, AdvanceType type);
+        bool Advance(Cursor cursor, AdvanceType type, Func<Cursor, bool> condition);
+        void ReplaceSource(Cursor cursor);
     }
 
     class HookNameSelector : Selection, Selector
     {
+        private Action replaceSource;
         public HookNameSelector(string name) => Name = name;
         public string Name { get; }
-        public bool Advance(Cursor cursor, AdvanceType type)
+        public bool Advance(Cursor cursor, AdvanceType type, Func<Cursor, bool> condition)
         {
-            while (cursor.ReadTag() != "name" && cursor.ReadTagValue() != Name) {
+            while (cursor.ReadTag() != "name" && cursor.ReadTagValue() != Name && condition?.Invoke(cursor) != false) {
                 if (!cursor.Advance()) {
                     return false;
                 }
@@ -66,14 +70,19 @@ namespace Spool
             case AdvanceType.Append:
                 cursor.MoveToEnd();
                 break;
+            case AdvanceType.ReplaceContainer:
+                replaceSource = cursor.DeleteContainer();
+                break;
             case AdvanceType.Replace:
-                cursor.DeleteAll();
+                replaceSource = cursor.DeleteAll();
                 break;
             }
             return true;
         }
 
         public Selector MakeSelector() => this;
+
+        public void ReplaceSource(Cursor cursor) => replaceSource();
     }
 
     class ContentSelector : Selection
@@ -88,8 +97,9 @@ namespace Spool
             public Inner(ContentSelector parent) => this.parent = parent;
             private readonly ContentSelector parent;
             private string atTextStart;
+            private string textToReplace;
 
-            public bool Advance(Cursor cursor, AdvanceType type)
+            public bool Advance(Cursor cursor, AdvanceType type, Func<Cursor, bool> condition)
             {
                 if (atTextStart != null) {
                     cursor.Step(atTextStart.Length);
@@ -100,7 +110,7 @@ namespace Spool
                 while (foundText == null) {
                     foreach (var text in parent.text) {
                         index = cursor.ReadText()?.IndexOf(text) ?? -1;
-                        if (index >= 0) {
+                        if (index >= 0 && condition?.Invoke(cursor) != false) {
                             foundText = text;
                             break;
                         }
@@ -114,8 +124,10 @@ namespace Spool
                 case AdvanceType.Append:
                     cursor.Step(foundText.Length);
                     break;
+                case AdvanceType.ReplaceContainer:
                 case AdvanceType.Replace:
                     cursor.DeleteChars(foundText.Length);
+                    textToReplace = foundText;
                     break;
                 case AdvanceType.Prepend:
                     atTextStart = foundText;
@@ -123,6 +135,8 @@ namespace Spool
                 }
                 return true;
             }
+
+            public void ReplaceSource(Cursor cursor) => cursor.WriteText(textToReplace);
         }
     }
 
@@ -148,18 +162,20 @@ namespace Spool
             public Inner(IEnumerable<Selector> arguments) => index = arguments.GetEnumerator();
             private IEnumerator<Selector> index;
 
-            public bool Advance(Cursor cursor, AdvanceType type)
+            public bool Advance(Cursor cursor, AdvanceType type, Func<Cursor, bool> condition)
             {
                 if (index.Current == null) {
                     index.MoveNext();
                 }
-                while (!index.Current.Advance(cursor, type)) {
+                while (!index.Current.Advance(cursor, type, condition)) {
                     if (index.MoveNext() == false) {
                         return false;
                     }
                 }
                 return true;
             }
+
+            public void ReplaceSource(Cursor cursor) => index.Current.ReplaceSource(cursor);
         }
     }
 
@@ -250,6 +266,12 @@ namespace Spool
             current = null;
         }
 
+        public bool CheckParentTags(string tag, string value)
+        {
+            return new []{parent}.Concat(parent.Ancestors()).OfType<XElement>()
+                .Any(x => x.Name == XName.Get(tag) && x.Attribute(XName.Get("value"))?.Value == value);
+        }
+
         public bool Step(int chars)
         {
             if (current is XText tnode) {
@@ -328,14 +350,14 @@ namespace Spool
             };
         }
 
-        public bool DeleteContainer()
+        public Action DeleteContainer()
         {
             var toRemove = parent;
             if (Pop()) {
                 toRemove.Remove();
-                return true;
+                return () => InsertNode(toRemove);
             }
-            return false;
+            throw new InvalidOperationException("At root");
         }
 
         public bool DeleteChars(int chars)
