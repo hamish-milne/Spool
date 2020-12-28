@@ -25,8 +25,10 @@ namespace Spool.Harlowe
                 typeof(HorizontalRule),
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
+                typeof(BulletList),
                 typeof(Style),
-                typeof(PlainText)
+                typeof(PlainText),
+                typeof(NewLine)
             )]
             public List<Renderable> Items;
         }
@@ -296,6 +298,51 @@ namespace Spool.Harlowe
             public override List<Renderable> GetContent() => content.Items;
         }
 
+        class BulletList : Renderable
+        {
+            struct ListItem
+            {
+                [Alternative(typeof(SOF), typeof(EOL))] Unnamed _;
+                [Whitespace] Unnamed __;
+                [CharSet("*"), Repeat] string indent;
+                [Whitespace] Unnamed ___;
+                [Repeat(Min = 0), Alternative(
+                    typeof(AppliedHook),
+                    typeof(Style),
+                    typeof(PlainText)
+                )]
+                List<Renderable> content;
+
+                public List<Renderable> Content => content;
+                public int Level => indent.Length;
+            }
+
+            [Repeat(Min = 1)]
+            private List<ListItem> items;
+
+            public override void Render(Context context)
+            {
+                var prevLevel = 0;
+                foreach (var item in items) {
+                    for (int i = 0; i < (item.Level - prevLevel); i++) {
+                        context.Cursor.PushTag("ul", null);
+                    }
+                    for (int i = 0; i < (prevLevel - item.Level); i++) {
+                        context.Cursor.Pop();
+                    }
+                    context.Cursor.PushTag("li", null);
+                    foreach (var c in item.Content) {
+                        c.Render(context);
+                    }
+                    context.Cursor.Pop();
+                    prevLevel = item.Level;
+                }
+                for (int i = 0; i < prevLevel; i++) {
+                    context.Cursor.Pop();
+                }
+            }
+        }
+
         abstract class Style : Renderable
         {
             public abstract string Op { get; }
@@ -372,16 +419,36 @@ namespace Spool.Harlowe
 
         class PlainText : Renderable
         {
-            [Regex(@"[^\]\}]((?!//)[^\|\(\{\[$_\]\}*'~\^])*")] public string Text { get; set; }
+            [Regex(@"[^\n\]\}]" + @"((\\\n)|(\n\\)|((?!//)[^\n\|\(\{\[$_\]\}*'~\^]))*")]
+            public string Text { get; set; }
 
             public override void Render(Context context)
             {
                 var text = Text;
                 text = Regex.Replace(text, @"(\\\n)|(\n\\)", "");
                 if ((context.Flags & RenderFlags.CollapseWhitespace) != 0) {
-                    text = Regex.Replace(text, @"\s+", " ").TrimStart();
+                    if (string.IsNullOrWhiteSpace(text)) {
+                        return;
+                    } else {
+                        text = Regex.Replace(text, @"\s+", " ").TrimStart();
+                        if (!char.IsWhiteSpace(text[text.Length - 1])) {
+                            text += " ";
+                        }
+                    }
                 }
                 context.Cursor.WriteRaw(text);
+            }
+        }
+
+        class NewLine : Renderable
+        {
+            [CharSet("\n")] Unnamed _;
+
+            public override void Render(Context context)
+            {
+                if ((context.Flags & RenderFlags.CollapseWhitespace) == 0) {
+                    context.Cursor.WriteText("\n");
+                }
             }
         }
 

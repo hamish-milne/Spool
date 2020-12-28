@@ -1,7 +1,5 @@
-using System.Linq;
 using System;
 using System.Collections.Generic;
-using System.Collections;
 
 namespace Spool.Harlowe
 {
@@ -90,7 +88,7 @@ namespace Spool.Harlowe
         public override bool Serializable => true;
         public Type Value { get; }
         protected override object GetObject() => Value;
-        protected override string GetString() => $"[the {Value.Name.ToString().ToLowerInvariant()} datatype]";
+        protected override string GetString() => $"the {Value.Name.ToString().ToLowerInvariant()} datatype";
         public override bool Test(TestOperator op, Data rhs)
         {
             return op switch {
@@ -107,7 +105,7 @@ namespace Spool.Harlowe
         public LambdaData(Filter value) => Value = value;
         public object Value { get; }
         protected override object GetObject() => Value;
-        protected override string GetString() => $"[A lambda]";
+        protected override string GetString() => $"A lambda";
     }
 
     class VariableToValue : Data

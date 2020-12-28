@@ -1,3 +1,4 @@
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,7 @@ namespace Spool
         string ReadText();
         string ReadTag();
         string ReadTagValue();
+        void Flush();
         void WriteRaw(string markup);
         void WriteText(string text);
         void PushTag(string tag, string value);
@@ -209,7 +211,7 @@ namespace Spool
                     charIndex = 0;
                 }
                 if (node is XText text2) {
-                    WriteText(text2.Value);
+                    WriteTextInternal(text2.Value);
                     return;
                 } else if (charIndex > 0) {
                     // Split text into two and put the new node in the middle
@@ -227,11 +229,20 @@ namespace Spool
             }
         }
 
+        private readonly StringBuilder markupBuffer = new StringBuilder();
+
         public void WriteRaw(string markup)
         {
+            markupBuffer.Append(markup);
+        }
+
+        public void Flush()
+        {
+            var markup = markupBuffer.ToString();
+            markupBuffer.Clear();
             // Markup consisting solely of whitespace is ignored by XmlReader
             if (string.IsNullOrWhiteSpace(markup)) {
-                WriteText(markup);
+                WriteTextInternal(markup);
                 return;
             }
             // TODO: Support HTML entities
@@ -248,6 +259,14 @@ namespace Spool
 
         public void WriteText(string text)
         {
+            markupBuffer.Append(new XText(text).ToString(SaveOptions.DisableFormatting));
+        }
+
+        private void WriteTextInternal(string text)
+        {
+            if (string.IsNullOrEmpty(text)) {
+                return;
+            }
             if (current is XText tnode) {
                 tnode.Value = tnode.Value.Insert(charIndex, text);
                 charIndex += text.Length;
@@ -260,6 +279,7 @@ namespace Spool
 
         public void PushTag(string tag, string value)
         {
+            Flush();
             var el = new XElement(XName.Get(tag));
             el.SetAttributeValue(XName.Get("value"), value);
             InsertNode(el);
@@ -269,12 +289,14 @@ namespace Spool
 
         public bool CheckParentTags(string tag, string value)
         {
+            Flush();
             return new []{parent}.Concat(parent.Ancestors()).OfType<XElement>()
                 .Any(x => x.Name == XName.Get(tag) && x.Attribute(XName.Get("value"))?.Value == value);
         }
 
         public bool Step(int chars)
         {
+            Flush();
             if (current is XText tnode) {
                 charIndex = Math.Max(0, Math.Min(tnode.Value.Length, charIndex + chars));
                 return true;
@@ -284,6 +306,7 @@ namespace Spool
 
         public bool MoveToEnd()
         {
+            Flush();
             if (current != null) {
                 current = null;
                 return true;
@@ -293,6 +316,7 @@ namespace Spool
 
         public bool Advance()
         {
+            Flush();
             charIndex = 0;
             if (current is XContainer container) {
                 parent = container;
@@ -310,6 +334,7 @@ namespace Spool
 
         public bool Pop()
         {
+            Flush();
             if (parent.Parent == null) {
                 return false;
             }
@@ -333,10 +358,14 @@ namespace Spool
             }
         }
 
-        public IDisposable Save() => new SavePoint(this);
+        public IDisposable Save() {
+            Flush();
+            return new SavePoint(this);
+        }
 
         public Action DeleteAll()
         {
+            Flush();
             var items = new Queue<XNode>();
             while (current != null) {
                 var x = current;
@@ -345,6 +374,7 @@ namespace Spool
                 x.Remove();
             }
             return () => {
+                Flush();
                 while (items.Count > 0) {
                     InsertNode(items.Dequeue());
                 }
@@ -353,16 +383,21 @@ namespace Spool
 
         public Action DeleteContainer()
         {
+            Flush();
             var toRemove = parent;
             if (Pop()) {
                 toRemove.Remove();
-                return () => InsertNode(toRemove);
+                return () => {
+                    Flush();
+                    InsertNode(toRemove);
+                };
             }
             throw new InvalidOperationException("At root");
         }
 
         public bool DeleteChars(int chars)
         {
+            Flush();
             if (current is XText tnode) {
                 chars = Math.Min(chars, tnode.Value.Length - charIndex);
                 tnode.Value = tnode.Value.Remove(charIndex, chars);
@@ -373,6 +408,7 @@ namespace Spool
 
         public void Reset()
         {
+            Flush();
             parent = Root.Root;
             current = parent.FirstNode;
             charIndex = 0;
@@ -380,6 +416,7 @@ namespace Spool
 
         public virtual void SetEvent(string name, Action<Cursor> action, bool repeat)
         {
+            Flush();
             var cParent = parent;
             switch (name) {
                 case "click":
@@ -393,6 +430,7 @@ namespace Spool
                             if (!repeat) {
                                 cParent.RemoveAnnotations<ClickEvent>();
                             }
+                            Flush();
                         }
                     }));
                     break;
@@ -404,6 +442,7 @@ namespace Spool
                             charIndex = 0;
                             action(this);
                             cParent.RemoveAnnotations<ShowEvent>();
+                            Flush();
                         }
                     }));
                     break;
@@ -412,6 +451,7 @@ namespace Spool
 
         public void RunEvent(string name)
         {
+            Flush();
             switch (name) {
                 case "click":
                     parent.Annotation<ClickEvent>()?.Invoke();

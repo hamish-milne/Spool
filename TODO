@@ -15,7 +15,7 @@ Harlowe 3.1.0:
         ✔ Hook names @done(20-12-25 14:09)
         ✔ HTML markup @done(20-12-23 16:53)
         ☐ Verbatim markup
-        ☐ Bulleted list
+        ✔ Bulleted list @done(20-12-28 14:56)
         ☐ Numbered list
         ☐ Aligner
         ☐ Column
@@ -263,6 +263,7 @@ Harlowe 3.1.0:
 Unity support:
     ✔ Text Mesh Pro @done(20-12-24 14:42)
     ✔ UGUI Text @done(20-12-24 14:42)
+    ☐ Mouse events
     ☐ Live updates
     ☐ StreamingAssets support
     ☐ 'Strip engine code' support
@@ -277,11 +278,11 @@ Bugs and edge cases:
     ☐ Local variable scopes, inc.
     ☐ Left-links left-associativity
     ☐ Built-in hook names
-    ☐ Unclosed HTML markup
+    ✔ Unclosed HTML markup @done(20-12-28 14:56)
     ☐ Line breaks in macro call syntax
     ☐ Markup/macros in strings
     ☐ Linking to passages that look like markup
-    ✔ Use SGML for parsing raw @done(20-12-25 14:09)
+    ☐ Use SGML for parsing raw
     ☐ #macro_* syntax
     ☐ Gradients can be printed to make a <tw-colour>
     ☐ (deprecated) hook names in (set:) and (put:)
@@ -317,7 +318,7 @@ Admin:
 (print: '**foo**' contains '*foo*')
     => true
 (print: '*foo*' is '<em>foo</em>')
-    => true
+    => false
 (print: `(a:)` contains 'VarRef')
     => ERROR
 (print: `<em>foo</em>`)

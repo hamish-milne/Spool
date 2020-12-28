@@ -200,6 +200,13 @@ And this.</mark>"
             },
             new []
             {
+@" * Bulleted item
+    *    Bulleted item 2
+  ** Indented bulleted item",
+@"<ul><li>Bulleted item</li><li>Bulleted item 2</li><ul><li>Indented bulleted item</li></ul></ul>"
+            },
+            new []
+            {
 @"        ---
   ----
      -----",

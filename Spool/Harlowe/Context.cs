@@ -74,6 +74,7 @@ namespace Spool.Harlowe
                     Cursor.Reset();
                     Cursor.DeleteAll();
                     GetPassageBody(CurrentPassage).Render(this);
+                    Cursor.Flush();
                     foreach (var p in PostProcessors) {
                         p.PostProcess(this);
                     }
