@@ -87,9 +87,11 @@ Harlowe 3.1.0:
             ✔ link-reveal-goto @done(20-12-26 19:47)
             ✔ link-show @done(20-12-26 20:02)
             ✔ link-undo @done(20-12-26 20:08)
-            ☐ click-[replace, append, prepend, goto]
-            ☐ mouseover-[replace, append, prepend, goto]
-            ☐ mouseout-[replace, append, prepend, goto]
+            ✔ [click, mouseover, mouseout] @done(20-12-28 00:54)
+            ☐ [click, mouseover, mouseout]-replace
+            ☐ [click, mouseover, mouseout]-append
+            ☐ [click, mouseover, mouseout]-prepend
+            ✔ [click, mouseover, mouseout]-goto @done(20-12-28 00:54)
             ✔ go-to @done(20-12-26 20:08)
             ☐ undo
         Live:

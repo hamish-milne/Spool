@@ -198,17 +198,20 @@ namespace Spool.Harlowe
                 );
 
                 if (hidden == true && name == null) {
-                    return; // Hidden, un-named hooks can never be made visible
-                }
-                if (name != null) {
+                    context.Cursor.PushTag("span", null);
+                } else if (name != null) {
                     context.Cursor.PushTag("name", name);
                 }
                 if (hidden == true) {
                     context.Cursor.SetEvent("show", _ => finalRenderFn(), false);
+                    var pos = context.Cursor.Save();
+                    foreach (var c in changerObjs) {
+                        c.RememberHidden(context, pos);
+                    }
                 } else {
                     finalRenderFn();
                 }
-                if (name != null) {
+                if (name != null || hidden == true) {
                     context.Cursor.Pop();
                 }
             }

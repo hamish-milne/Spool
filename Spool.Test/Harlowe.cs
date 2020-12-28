@@ -313,7 +313,7 @@ The familiar scent of stale parchment comforts you."
 @"(set: $married to false, $date to false)$married[You hope this warrior will someday find the sort of love you know.]
 (else-if: not $date)[You hope this warrior isn't doing anything this Sunday (because
 you've got overtime on Saturday.)]",
-@"
+@"<span />
 You hope this warrior isn't doing anything this Sunday (because
 you've got overtime on Saturday.)"
             },
@@ -326,9 +326,9 @@ $isUtterlyEvil[You suddenly grip their ankles and spread your warm smile into a 
 (else:)[They sigh contentedly, filling your pious heart with joy.]",
 @"
 You suddenly grip their ankles and spread your warm smile into a searing smirk.
-
+<span />
 Before they can react, you unleash a typhoon of tickles!
-"
+<span />"
             },
             new []
             {
@@ -421,6 +421,11 @@ lean"
             {
 @"(link-undo:""Retreat"")",
 @"<a>Retreat</a>"
+            },
+            new []
+            {
+@"Time to get in your crimchair. (click-goto: ""crim"", ""Explanation Passage"")",
+@"Time to get in your <enchant value=""0""><a>crim</a></enchant>chair. "
             }
         };
 
@@ -454,7 +459,46 @@ lean"
 @"But those little quirks paled before (link-show: ""her darker eccentricities"", ?twist). |twist)[She was a furry all along.]",
 @"But those little quirks paled before <a>her darker eccentricities</a>. <name value=""twist"" />",
 @"But those little quirks paled before her darker eccentricities. <name value=""twist"">She was a furry all along.</name>"
-            }
+            },
+            new []
+            {
+@"There is a small dish of water. (click: ""dish"")[Your finger gets wet.]",
+@"There is a small <enchant value=""0""><a>dish</a></enchant> of water. <span />",
+@"There is a small <enchant value=""0""><a>dish</a></enchant> of water. <span>Your finger gets wet.</span>"
+            },
+            new []
+            {
+@"[Fie and fuggaboo!]<shout| (click: ?shout)[Blast and damnation!]",
+@"<enchant value=""0""><a><name value=""shout"">Fie and fuggaboo!</name></a></enchant> <span />",
+@"<enchant value=""0""><a><name value=""shout"">Fie and fuggaboo!</name></a></enchant> <span>Blast and damnation!</span>"
+            },
+            new []
+            {
+@"My deepest secret.
+(click-replace: ""secret"")[longing for you]",
+@"My deepest <enchant value=""0""><a>secret</a></enchant>.
+",
+@"My deepest <enchant value=""0"">longing for you</enchant>.
+"
+            },
+            new []
+            {
+@"I have nothing to fear.
+(click-append: ""fear"")[ but my own hand]",
+@"I have nothing to <enchant value=""0""><a>fear</a></enchant>.
+",
+@"I have nothing to <enchant value=""0""><a>fear</a> but my own hand</enchant>.
+"
+            },
+            new []
+            {
+@"Who stands with me?
+(click-prepend: ""?"")[ but my shadow]",
+@"Who stands with me<enchant value=""0""><a>?</a></enchant>
+",
+@"Who stands with me<enchant value=""0""> but my shadow<a>?</a></enchant>
+"
+            },
         };
     
 // TODO: (if: (num:"5") > 2)

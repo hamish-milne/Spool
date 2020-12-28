@@ -87,6 +87,7 @@ namespace Spool
 
     class ContentSelector : Selection
     {
+        public ContentSelector(string text) => this.text = new []{text};
         public ContentSelector(IEnumerable<string> text) => this.text = text.ToArray();
         private string[] text;
 

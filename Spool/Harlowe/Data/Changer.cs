@@ -10,5 +10,6 @@ namespace Spool.Harlowe
         protected override string GetString() => $"a ({GetType().Name}:) changer";
         public virtual void Apply(ref bool? hidden, ref string name) {}
         public abstract void Render(Context context, Action source);
+        public virtual void RememberHidden(Context context, IDisposable cursorPosition) {}
     }
 }

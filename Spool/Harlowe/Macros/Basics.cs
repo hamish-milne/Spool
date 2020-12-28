@@ -93,7 +93,7 @@ namespace Spool.Harlowe
         }
 
         public Command enchant(HookName hook, Changer changer) => new Enchant(hook, changer);
-        public Command enchant(string text, Changer changer) => new Enchant(new ContentSelector(new []{text}), changer);
+        public Command enchant(string text, Changer changer) => new Enchant(new ContentSelector(text), changer);
 
         class Enchant : Command, PostProcessor
         {
