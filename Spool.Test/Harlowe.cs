@@ -487,7 +487,7 @@ lean"
 (click-append: ""fear"")[ but my own hand]",
 @"I have nothing to <enchant value=""0""><a>fear</a></enchant>.
 ",
-@"I have nothing to <enchant value=""0""><a>fear</a> but my own hand</enchant>.
+@"I have nothing to <enchant value=""0"">fear but my own hand</enchant>.
 "
             },
             new []
@@ -496,7 +496,7 @@ lean"
 (click-prepend: ""?"")[ but my shadow]",
 @"Who stands with me<enchant value=""0""><a>?</a></enchant>
 ",
-@"Who stands with me<enchant value=""0""> but my shadow<a>?</a></enchant>
+@"Who stands with me<enchant value=""0""> but my shadow?</enchant>
 "
             },
         };

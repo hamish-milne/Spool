@@ -230,18 +230,22 @@ namespace Spool.Harlowe
             {
                 context.Cursor.PushTag("a", null);
                 context.Cursor.SetEvent(eventName, cursor => {
+                    var inner = cursor.DeleteAll();
+                    cursor.DeleteContainer();
                     switch (type) {
                     case AdvanceType.Append:
-                        cursor.Pop();
-                        break;
-                    case AdvanceType.Replace:
-                        cursor.DeleteAll();
+                        inner();
+                        this.source();
                         break;
                     case AdvanceType.ReplaceContainer:
-                        cursor.DeleteContainer();
+                    case AdvanceType.Replace:
+                        this.source();
+                        break;
+                    case AdvanceType.Prepend:
+                        this.source();
+                        inner();
                         break;
                     }
-                    source();
                 }, false);
                 source();
                 context.Cursor.Pop();

@@ -88,9 +88,9 @@ Harlowe 3.1.0:
             ✔ link-show @done(20-12-26 20:02)
             ✔ link-undo @done(20-12-26 20:08)
             ✔ [click, mouseover, mouseout] @done(20-12-28 00:54)
-            ☐ [click, mouseover, mouseout]-replace
-            ☐ [click, mouseover, mouseout]-append
-            ☐ [click, mouseover, mouseout]-prepend
+            ✔ [click, mouseover, mouseout]-replace @done(20-12-28 01:08)
+            ✔ [click, mouseover, mouseout]-append @done(20-12-28 01:08)
+            ✔ [click, mouseover, mouseout]-prepend @done(20-12-28 01:08)
             ✔ [click, mouseover, mouseout]-goto @done(20-12-28 00:54)
             ✔ go-to @done(20-12-26 20:08)
             ☐ undo
