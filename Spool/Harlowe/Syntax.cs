@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Spool.Harlowe
 {
-    [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]
+    [TopLevel, CompileFlags(CompileFlags.AggressiveMemoizing)]
     public class Block : Renderable
     {
 
@@ -26,6 +26,7 @@ namespace Spool.Harlowe
                 typeof(CollapsedSpan),
                 typeof(AppliedHook),
                 typeof(BulletList),
+                typeof(NumberedList),
                 typeof(Style),
                 typeof(PlainText),
                 typeof(NewLine)
@@ -298,34 +299,42 @@ namespace Spool.Harlowe
             public override List<Renderable> GetContent() => content.Items;
         }
 
-        class BulletList : Renderable
+        abstract class ListMarkup : Renderable
         {
-            struct ListItem
+            public abstract string Indent { get; }
+        }
+
+        abstract class ListMarkup<T> : ListMarkup where T : ListMarkup, new()
+        {
+            protected struct ListItem
             {
-                [Alternative(typeof(SOF), typeof(EOL))] Unnamed _;
-                [Whitespace] Unnamed __;
-                [CharSet("*"), Repeat] string indent;
+                private string Indent => new T().Indent;
+                [Alternative(typeof(SOF), typeof(EOL))] private Unnamed _;
+                [Optional, Whitespace] private Unnamed __;
+                [IndirectLiteral(nameof(Indent)), Repeat] private List<string> indent;
                 [Whitespace] Unnamed ___;
                 [Repeat(Min = 0), Alternative(
                     typeof(AppliedHook),
                     typeof(Style),
                     typeof(PlainText)
                 )]
-                List<Renderable> content;
+                private List<Renderable> content;
 
                 public List<Renderable> Content => content;
-                public int Level => indent.Length;
+                public int Level => indent.Count;
             }
 
             [Repeat(Min = 1)]
             private List<ListItem> items;
+
+            protected abstract string Tag { get; }
 
             public override void Render(Context context)
             {
                 var prevLevel = 0;
                 foreach (var item in items) {
                     for (int i = 0; i < (item.Level - prevLevel); i++) {
-                        context.Cursor.PushTag("ul", null);
+                        context.Cursor.PushTag(Tag, null);
                     }
                     for (int i = 0; i < (prevLevel - item.Level); i++) {
                         context.Cursor.Pop();
@@ -341,6 +350,18 @@ namespace Spool.Harlowe
                     context.Cursor.Pop();
                 }
             }
+        }
+
+        class BulletList : ListMarkup<BulletList>
+        {
+            public override string Indent => "*";
+            protected override string Tag => "ul";
+        }
+
+        class NumberedList : ListMarkup<NumberedList>
+        {
+            public override string Indent => "0.";
+            protected override string Tag => "ol";
         }
 
         abstract class Style : Renderable
@@ -419,7 +440,7 @@ namespace Spool.Harlowe
 
         class PlainText : Renderable
         {
-            [Regex(@"[^\n\]\}]" + @"((\\\n)|(\n\\)|((?!//)[^\n\|\(\{\[$_\]\}*'~\^]))*")]
+            [Regex(@"[^\n\]\}]" + @"((\\\n)|(\n\\)|((?!//|''|~~|^^)[^\n\|\(\{\[$_\]\}*]))*")]
             public string Text { get; set; }
 
             public override void Render(Context context)

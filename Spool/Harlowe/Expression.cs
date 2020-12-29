@@ -31,7 +31,7 @@ namespace Spool.Harlowe
             => Lexico.Lexico.Parse<TopLevelExpression>(input, trace);
 
 
-        [TopLevel, CompileFlags(CompileFlags.CheckImmediateLeftRecursion | CompileFlags.AggressiveMemoizing)]   
+        [TopLevel, CompileFlags(CompileFlags.AggressiveMemoizing)]   
         class TopLevelExpression : Expression
         {
             [Term] private TopExpression expression;

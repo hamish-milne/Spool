@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Linq;
 using System.IO;
 using System;
@@ -207,6 +208,13 @@ And this.</mark>"
             },
             new []
             {
+@"0. Numbered item
+   0. Numbered item 2
+ 0.0. Indented numbered item",
+@"<ol><li>Numbered item</li><li>Numbered item 2</li><ol><li>Indented numbered item</li></ol></ol>"
+            },
+            new []
+            {
 @"        ---
   ----
      -----",
@@ -303,18 +311,18 @@ You wring out your beard with a quick twisting spell.
 You step into the ruined library.
 The familiar scent of stale parchment comforts you."
             },
-//             new []
-//             {
-// @"(set: $size to big)Your stomach makes {
-// (if: $size is 'giant')[
-//     an intimidating rumble! You'll have to eat plenty of trees.
-// ](else-if: $size is 'big')[
-//     a loud growl. You're hungry for some shrubs.
-// ](else:​)[
-//     a faint gurgle. You hope to scavenge some leaves.
-// ]}.",
-// @"Your stomach makes a loud growl. You're hungry for some shrubs."
-//             },
+            new []
+            {
+@"(set: $size to 'big')Your stomach makes {
+(if: $size is 'giant')[
+    an intimidating rumble! You'll have to eat plenty of trees.
+](else-if: $size is 'big')[
+    a loud growl. You're hungry for some shrubs.
+](else:)[
+    a faint gurgle. You hope to scavenge some leaves.
+]}",
+@"Your stomach makes <span />a loud growl. You're hungry for some shrubs. <span />"
+            },
             new []
             {
 @"(set: $married to false, $date to false)$married[You hope this warrior will someday find the sort of love you know.]
@@ -520,9 +528,16 @@ lean"
         [MemberData(nameof(ExampleMarkup))]
         public void StaticMarkup(string input, string expected)
         {
-            // using var fs = File.Open("./out.txt", FileMode.Append);
-            // using var sw = new StreamWriter(fs){AutoFlush = true};
-            var body = Lexico.Lexico.Parse<Block>(input
+            using var fs = File.Open("./out12.txt", FileMode.Append);
+            using var sw = new StreamWriter(fs){AutoFlush = true};
+            Block body;
+            // var t = new Thread(() => body = Lexico.Lexico.Parse<Block>(input
+            //     ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
+            //     // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
+            // ), 4*1024*1024);
+            // t.Start();
+            // t.Join();
+            body = Lexico.Lexico.Parse<Block>(input
                 // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
                 // ,new Lexico.Test.XunitTrace(_outputHelper){Verbose = true}
             );
@@ -533,6 +548,20 @@ lean"
             context.GoTo("Test");
             var actual = cursor.Root.Root.ToString(SaveOptions.DisableFormatting);
             Assert.Equal($"<tw-passage>{expected.Replace("\r", "")}</tw-passage>", actual.Replace("\r", ""));
+        }
+
+        [Fact]
+        public void DepthTest()
+        {
+            using var fs = File.Open("./out13.txt", FileMode.Append);
+            using var sw = new StreamWriter(fs){AutoFlush = true};
+            var t = new Thread(() =>
+                Lexico.Lexico.Parse<Block>("[some [deeply [nested [hooks [yeah [let's [go [even [deeper]]]]]]]"
+                // ,new Lexico.DelegateTextTrace(sw.WriteLine){Verbose = true}
+                ),
+                1*1024*1024);
+            t.Start();
+            t.Join();
         }
 
         [Theory]

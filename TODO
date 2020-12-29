@@ -16,7 +16,7 @@ Harlowe 3.1.0:
         ✔ HTML markup @done(20-12-23 16:53)
         ☐ Verbatim markup
         ✔ Bulleted list @done(20-12-28 14:56)
-        ☐ Numbered list
+        ✔ Numbered list @done(20-12-29 00:27)
         ☐ Aligner
         ☐ Column
         ☐ Heading
@@ -288,6 +288,9 @@ Bugs and edge cases:
     ☐ (deprecated) hook names in (set:) and (put:)
     ☐ DataSet 'matches' behaviour
     ☐ DataMaps should render as a <table>
+    ☐ Zero-width spaces etc.
+    ☐ Don't add spaces before **, '' etc. in collapsed whitespace blocks
+    ☐ Fix that Lexico trace bug!
 Admin:
     ☐ Unity icons
     ☐ Documentation
